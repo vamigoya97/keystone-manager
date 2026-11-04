@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="460" viewBox="0 0 680 460" role="img">
+<title>Operator flow</title>
+<desc>Operators sign in at /operator, pass the allowlist check, reach the console with the gas wallet and keystone list, manage each keystone through details, customize, gallery, items and members tabs, and changes go live for members.</desc>
+<style>
+  .bg{fill:#FFFFFF}
+  text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .th{font-size:14px;font-weight:500;fill:#2C2C2A}
+  .ts{font-size:12px;fill:#5F5E5A}
+  .arr{stroke:#888780;stroke-width:1.5;fill:none}
+  .frame{fill:none;stroke:#B4B2A9;stroke-width:0.5;stroke-dasharray:4 3}
+  .c-teal rect,rect.c-teal{fill:#E1F5EE;stroke:#0F6E56}.c-teal .th{fill:#085041}.c-teal .ts{fill:#0F6E56}
+  .c-purple rect,rect.c-purple{fill:#EEEDFE;stroke:#534AB7}.c-purple .th{fill:#3C3489}.c-purple .ts{fill:#534AB7}
+  .c-coral rect,rect.c-coral{fill:#FAECE7;stroke:#993C1D}.c-coral .th{fill:#712B13}.c-coral .ts{fill:#993C1D}
+  .c-gray rect,rect.c-gray{fill:#F1EFE8;stroke:#5F5E5A}.c-gray .th{fill:#444441}.c-gray .ts{fill:#5F5E5A}
+  @media (prefers-color-scheme:dark){
+    .bg{fill:#1F1F1E}.th{fill:#F1EFE8}.ts{fill:#B4B2A9}.frame{stroke:#5F5E5A}
+    .c-teal rect,rect.c-teal{fill:#085041;stroke:#5DCAA5}.c-teal .th{fill:#E1F5EE}.c-teal .ts{fill:#9FE1CB}
+    .c-purple rect,rect.c-purple{fill:#3C3489;stroke:#AFA9EC}.c-purple .th{fill:#EEEDFE}.c-purple .ts{fill:#CECBF6}
+    .c-coral rect,rect.c-coral{fill:#712B13;stroke:#F0997B}.c-coral .th{fill:#FAECE7}.c-coral .ts{fill:#F5C4B3}
+    .c-gray rect,rect.c-gray{fill:#444441;stroke:#B4B2A9}.c-gray .th{fill:#F1EFE8}.c-gray .ts{fill:#D3D1C7}
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="bg" width="680" height="460"/>
+<g class="c-purple"><rect x="60" y="40" width="260" height="56" rx="8" stroke-width="0.5"/><text class="th" x="190" y="58" text-anchor="middle" dominant-baseline="central">Sign in at /operator</text><text class="ts" x="190" y="78" text-anchor="middle" dominant-baseline="central">Privy · phone or wallet</text></g>
+<g class="c-coral"><rect x="380" y="40" width="230" height="56" rx="8" stroke-width="0.5"/><text class="th" x="495" y="58" text-anchor="middle" dominant-baseline="central">Not an operator</text><text class="ts" x="495" y="78" text-anchor="middle" dominant-baseline="central">Not on the allowlist</text></g>
+<line x1="320" y1="68" x2="378" y2="68" class="arr" marker-end="url(#arrow)"/>
+<line x1="190" y1="96" x2="190" y2="128" class="arr" marker-end="url(#arrow)"/>
+<g class="c-purple"><rect x="60" y="130" width="260" height="56" rx="8" stroke-width="0.5"/><text class="th" x="190" y="148" text-anchor="middle" dominant-baseline="central">Console</text><text class="ts" x="190" y="168" text-anchor="middle" dominant-baseline="central">Gas wallet · keystones</text></g>
+<g class="c-purple"><rect x="380" y="130" width="230" height="56" rx="8" stroke-width="0.5"/><text class="th" x="495" y="148" text-anchor="middle" dominant-baseline="central">New keystone</text><text class="ts" x="495" y="168" text-anchor="middle" dominant-baseline="central">Name, URL, type</text></g>
+<line x1="320" y1="158" x2="378" y2="158" class="arr" marker-end="url(#arrow)"/>
+<line x1="190" y1="186" x2="190" y2="218" class="arr" marker-end="url(#arrow)"/>
+<rect x="40" y="220" width="600" height="110" rx="12" class="frame"/>
+<text class="ts" x="60" y="240" dominant-baseline="central">Per-keystone tabs</text>
+<g class="c-purple"><rect x="56" y="256" width="106" height="56" rx="8" stroke-width="0.5"/><text class="th" x="109" y="274" text-anchor="middle" dominant-baseline="central">Gallery</text><text class="ts" x="109" y="294" text-anchor="middle" dominant-baseline="central">Uploads</text></g>
+<g class="c-purple"><rect x="172" y="256" width="106" height="56" rx="8" stroke-width="0.5"/><text class="th" x="225" y="274" text-anchor="middle" dominant-baseline="central">Token</text><text class="ts" x="225" y="294" text-anchor="middle" dominant-baseline="central">Contract, rules</text></g>
+<g class="c-purple"><rect x="288" y="256" width="106" height="56" rx="8" stroke-width="0.5"/><text class="th" x="341" y="274" text-anchor="middle" dominant-baseline="central">Members</text><text class="ts" x="341" y="294" text-anchor="middle" dominant-baseline="central">Access, chips</text></g>
+<g class="c-purple"><rect x="404" y="256" width="106" height="56" rx="8" stroke-width="0.5"/><text class="th" x="457" y="274" text-anchor="middle" dominant-baseline="central">Details</text><text class="ts" x="457" y="294" text-anchor="middle" dominant-baseline="central">Copy, colors</text></g>
+<g class="c-purple"><rect x="520" y="256" width="106" height="56" rx="8" stroke-width="0.5"/><text class="th" x="573" y="274" text-anchor="middle" dominant-baseline="central">Customize</text><text class="ts" x="573" y="294" text-anchor="middle" dominant-baseline="central">Steps, media</text></g>
+<line x1="340" y1="330" x2="340" y2="362" class="arr" marker-end="url(#arrow)"/>
+<g class="c-gray"><rect x="130" y="364" width="420" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="382" text-anchor="middle" dominant-baseline="central">Live for members</text><text class="ts" x="340" y="402" text-anchor="middle" dominant-baseline="central">/x/:slug, gallery, chip links</text></g>
+</svg>

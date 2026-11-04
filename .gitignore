@@ -1,0 +1,36 @@
+# dependencies
+.next
+node_modules
+.pnpx
+
+# build artifacts
+dist/
+artifacts/
+.cache/
+
+# env
+.env.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# debug
+npm-debug.log*
+
+# remix
+.svelte-kit
+
+# misc
+*.tsbuildinfo
+next-env.d.ts
+# operator store (keystones, members, chip counters)
+data/

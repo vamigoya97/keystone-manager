@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #0A0A0A;
+  --color-surface-raised: rgba(255, 255, 255, 0.04);
+  --color-surface-glass: rgba(10, 10, 10, 0.72);
+  --color-surface-elevated: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-default: rgba(255, 255, 255, 0.12);
+  --color-text-primary: rgba(255, 255, 255, 0.92);
+  --color-text-secondary: rgba(255, 255, 255, 0.48);
+  --color-text-muted: rgba(255, 255, 255, 0.28);
+  --color-accent: #C8FF2E;
+  --color-accent-dim: rgba(200, 255, 46, 0.12);
+  --color-accent-glow: rgba(200, 255, 46, 0.06);
+  --color-gate-locked: rgba(255, 82, 82, 0.7);
+  --color-gate-unlocked: rgba(200, 255, 46, 0.7);
+  --color-rose: #f43f5e;
+  --color-rose-dim: rgba(244, 63, 94, 0.12);
+  --color-emerald: #34d399;
+  --color-emerald-dim: rgba(52, 211, 153, 0.12);
+  --color-amber: #fbbf24;
+  --color-amber-dim: rgba(251, 191, 36, 0.12);
+
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+/* Must stay inside a layer: unlayered rules override every Tailwind
+   utility (which live in @layer utilities), wiping out p-*, m-*, etc. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
+
+html, body {
+  height: 100%;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass panel variants */
+.glass {
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.glass-elevated {
+  background: var(--color-surface-elevated);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid var(--color-border-default);
+}
+
+/* Content sits above overlay */
+.content-layer {
+  position: relative;
+  z-index: 2;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Link underlines */
+@layer base {
+  a {
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+/* ── NFC claim flow ─────────────────────────────────────────── */
+
+/* Expanding rings behind an NFC glyph */
+@keyframes tap-ripple {
+  0% { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.tap-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--color-accent);
+  animation: tap-ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+.tap-ring:nth-child(2) { animation-delay: 0.8s; }
+.tap-ring:nth-child(3) { animation-delay: 1.6s; }
+
+/* Staggered entrance */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.pop {
+  animation: pop 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+
+/* Mint celebrations */
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 105vh, 0) rotate(var(--spin, 540deg)); opacity: 0.9; }
+}
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  animation: confetti-fall var(--dur, 2.2s) cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 0s) forwards;
+}
+

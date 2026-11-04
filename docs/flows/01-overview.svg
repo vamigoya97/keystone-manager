@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="380" viewBox="0 0 680 380" role="img">
+<title>Web app overview</title>
+<desc>Chip taps (one keystone, or a shared item for several) lead to the keystone page and then the private gallery; operators sign in to the console, and the operator wallet pays every mint.</desc>
+<style>
+  .bg{fill:#FFFFFF}
+  text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .th{font-size:14px;font-weight:500;fill:#2C2C2A}
+  .ts{font-size:12px;fill:#5F5E5A}
+  .arr{stroke:#888780;stroke-width:1.5;fill:none}
+  .frame{fill:none;stroke:#B4B2A9;stroke-width:0.5;stroke-dasharray:4 3}
+  .c-teal rect,rect.c-teal{fill:#E1F5EE;stroke:#0F6E56}.c-teal .th{fill:#085041}.c-teal .ts{fill:#0F6E56}
+  .c-purple rect,rect.c-purple{fill:#EEEDFE;stroke:#534AB7}.c-purple .th{fill:#3C3489}.c-purple .ts{fill:#534AB7}
+  .c-coral rect,rect.c-coral{fill:#FAECE7;stroke:#993C1D}.c-coral .th{fill:#712B13}.c-coral .ts{fill:#993C1D}
+  .c-gray rect,rect.c-gray{fill:#F1EFE8;stroke:#5F5E5A}.c-gray .th{fill:#444441}.c-gray .ts{fill:#5F5E5A}
+  @media (prefers-color-scheme:dark){
+    .bg{fill:#1F1F1E}.th{fill:#F1EFE8}.ts{fill:#B4B2A9}.frame{stroke:#5F5E5A}
+    .c-teal rect,rect.c-teal{fill:#085041;stroke:#5DCAA5}.c-teal .th{fill:#E1F5EE}.c-teal .ts{fill:#9FE1CB}
+    .c-purple rect,rect.c-purple{fill:#3C3489;stroke:#AFA9EC}.c-purple .th{fill:#EEEDFE}.c-purple .ts{fill:#CECBF6}
+    .c-coral rect,rect.c-coral{fill:#712B13;stroke:#F0997B}.c-coral .th{fill:#FAECE7}.c-coral .ts{fill:#F5C4B3}
+    .c-gray rect,rect.c-gray{fill:#444441;stroke:#B4B2A9}.c-gray .th{fill:#F1EFE8}.c-gray .ts{fill:#D3D1C7}
+  }
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="bg" width="680" height="380"/>
+<g class="c-teal"><rect x="40" y="40" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="130" y="58" text-anchor="middle" dominant-baseline="central">Chip tap</text><text class="ts" x="130" y="78" text-anchor="middle" dominant-baseline="central">/x/:slug/tap</text></g>
+<g class="c-teal"><rect x="250" y="40" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="58" text-anchor="middle" dominant-baseline="central">Shared item</text><text class="ts" x="340" y="78" text-anchor="middle" dominant-baseline="central">/t/:batch</text></g>
+<g class="c-purple"><rect x="460" y="40" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="550" y="58" text-anchor="middle" dominant-baseline="central">Operator sign-in</text><text class="ts" x="550" y="78" text-anchor="middle" dominant-baseline="central">/operator</text></g>
+<line x1="130" y1="96" x2="130" y2="148" class="arr" marker-end="url(#arrow)"/>
+<line x1="340" y1="96" x2="340" y2="148" class="arr" marker-end="url(#arrow)"/>
+<line x1="550" y1="96" x2="550" y2="148" class="arr" marker-end="url(#arrow)"/>
+<g class="c-teal"><rect x="40" y="150" width="390" height="56" rx="8" stroke-width="0.5"/><text class="th" x="235" y="168" text-anchor="middle" dominant-baseline="central">Keystone page</text><text class="ts" x="235" y="188" text-anchor="middle" dominant-baseline="central">/x/:slug · double-tap to forge a free keystone</text></g>
+<g class="c-purple"><rect x="460" y="150" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="550" y="168" text-anchor="middle" dominant-baseline="central">Operator console</text><text class="ts" x="550" y="188" text-anchor="middle" dominant-baseline="central">Gallery, token, members</text></g>
+<line x1="235" y1="206" x2="235" y2="258" class="arr" marker-end="url(#arrow)"/>
+<line x1="550" y1="206" x2="550" y2="258" class="arr" marker-end="url(#arrow)"/>
+<g class="c-teal"><rect x="40" y="260" width="390" height="56" rx="8" stroke-width="0.5"/><text class="th" x="235" y="278" text-anchor="middle" dominant-baseline="central">Private gallery</text><text class="ts" x="235" y="298" text-anchor="middle" dominant-baseline="central">/x/:slug/gallery · photos, clips, audio, QR codes</text></g>
+<g class="c-purple"><rect x="460" y="260" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="550" y="278" text-anchor="middle" dominant-baseline="central">Operator wallet</text><text class="ts" x="550" y="298" text-anchor="middle" dominant-baseline="central">Pays every mint</text></g>
+<path d="M460 288 L445 288 L445 178 L434 178" class="arr" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<rect class="c-teal" x="40" y="344" width="12" height="12" rx="3" stroke-width="0.5"/><text class="ts" x="60" y="350" dominant-baseline="central">Members</text><rect class="c-purple" x="200" y="344" width="12" height="12" rx="3" stroke-width="0.5"/><text class="ts" x="220" y="350" dominant-baseline="central">Operators</text><line x1="320" y1="350" x2="350" y2="350" class="arr" stroke-dasharray="4 3"/><text class="ts" x="358" y="350" dominant-baseline="central">Gas paid by operator</text>
+</svg>

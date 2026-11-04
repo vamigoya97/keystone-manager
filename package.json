@@ -1,0 +1,39 @@
+{
+  "name": "keystone-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "compile:pass": "hardhat build contracts/KeystonePass.sol && node -e \"const a=require('./artifacts/contracts/KeystonePass.sol/KeystonePass.json');require('fs').writeFileSync('lib/keystone-pass.json',JSON.stringify({abi:a.abi,bytecode:a.bytecode}))\""
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "@privy-io/react-auth": "^2.12.0",
+    "@privy-io/server-auth": "^1.32.5",
+    "dotenv": "^16.4.0",
+    "next": "^15.3.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-icons": "^5.7.0",
+    "tsx": "^4.10.0",
+    "viem": "^2.30.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "hardhat": "^3.13.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.8.0"
+  }
+}
