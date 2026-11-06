@@ -1,4 +1,5 @@
-import type { GalleryKind } from "./keystones";
+import type { GalleryItem, GalleryKind } from "./keystones";
+import { galleryKind } from "./keystones";
 
 /**
  * What can go in a keystone's gallery (the vault) and how big it can be.
@@ -17,7 +18,20 @@ export const GALLERY_TYPES: Record<"image" | "video" | "audio", string[]> = {
   audio: ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/wav", "audio/x-wav", "audio/webm", "audio/ogg"],
 };
 
-export const QR_LIMITS = { url: 500, label: 80 };
+export const QR_LIMITS = { url: 500, label: 80, text: 240 };
+
+/** Items an operator can stretch across both vault columns: landscape photos and clips, and audio notes. */
+export function canBeWide(item: Pick<GalleryItem, "kind" | "width" | "height">): boolean {
+  const kind = galleryKind(item);
+  if (kind === "audio") return true;
+  return (kind === "image" || kind === "video") && item.width > item.height;
+}
+
+/** QR card front text: trimmed, at most QR_LIMITS.text characters, no control characters except newlines. */
+export function cleanQrText(value: unknown): string | undefined {
+  const v = typeof value === "string" ? value.replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, "").trim().slice(0, QR_LIMITS.text) : "";
+  return v || undefined;
+}
 
 /** Which kind of upload a MIME type is, or null when it isn't allowed. */
 export function uploadKind(type: string): "image" | "video" | "audio" | null {

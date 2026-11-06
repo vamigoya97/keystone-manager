@@ -15,8 +15,8 @@ Page-by-page flows and diagrams: [docs/USER_FLOWS.md](docs/USER_FLOWS.md).
 - **Operators** (e.g. ay.llu, GOAT community, Sahar Camp) issue **keystones**: one universal token, optionally
   with dates and a location (a gathering or season); without dates it's ongoing.
 - **One link per keystone:** `/x/<slug>` (renaming a keystone moves it; old links redirect). A chip tap (`/x/<slug>/tap`) opens the claim screen
-  directly; once the chip is verified the member double-taps the artwork to forge (signing in with Privy
-  if needed) and enters `/x/<slug>/gallery`. A physical tap is the only way in.
+  directly; once the chip is verified the member slides one button to secure it (signing in with Privy
+  if needed, then forging) and lands in `/x/<slug>/gallery`. A physical tap is the only way in.
 - **Item batches:** one physical item can unlock several keystones from the same operator via `/t/<batch>`.
 - **Gallery photos** are Pinata private files, served as short-lived signed links only to current holders.
 - **On chain**, each keystone is a `KeystonePass` ERC-721 on Base: operator-only mint, on-chain metadata (image,

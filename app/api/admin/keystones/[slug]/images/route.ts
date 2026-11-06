@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { handleAuthError, requireKeystoneOperator } from "@/lib/auth";
-import { GALLERY_LIMITS, QR_LIMITS, cleanQrUrl, uploadKind } from "@/lib/gallery";
+import { GALLERY_LIMITS, QR_LIMITS, canBeWide, cleanQrText, cleanQrUrl, uploadKind } from "@/lib/gallery";
 import { MEDIA_MAX_BYTES, VIDEO_MAX_SECONDS } from "@/lib/theme";
 import type { GalleryItem } from "@/lib/keystones";
 import { pinImage } from "@/lib/pinata/upload";
@@ -23,7 +23,7 @@ const real = (g: GalleryItem) => !!g.cid || g.kind === "qr";
  * Gallery files go to Pinata's private network (holders get signed URLs);
  * token art is pinned publicly since everyone sees the pass.
  *
- * POST JSON { kind: "qr", url, label } adds a QR code for a link.
+ * POST JSON { kind: "qr", url, label, text? } adds a QR code for a link; `text` goes on the card's front.
  */
 export async function POST(req: Request, { params }: Ctx) {
   try {
@@ -34,12 +34,13 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     if (req.headers.get("content-type")?.includes("application/json")) {
-      const body = (await req.json().catch(() => ({}))) as { kind?: string; url?: unknown; label?: unknown };
+      const body = (await req.json().catch(() => ({}))) as { kind?: string; url?: unknown; label?: unknown; text?: unknown };
       if (body.kind !== "qr") return Response.json({ error: "Unknown item" }, { status: 400 });
       const url = cleanQrUrl(body.url);
       if (!url) return Response.json({ error: `Enter a full http(s) link, up to ${QR_LIMITS.url} characters` }, { status: 400 });
       const label = (typeof body.label === "string" ? body.label.trim() : "").slice(0, QR_LIMITS.label) || new URL(url).hostname;
-      const item: GalleryItem = { kind: "qr", src: `qr:${randomBytes(6).toString("hex")}`, url, alt: label, width: 1, height: 1 };
+      const text = cleanQrText(body.text);
+      const item: GalleryItem = { kind: "qr", src: `qr:${randomBytes(6).toString("hex")}`, url, alt: label, width: 1, height: 1, ...(text ? { text } : {}) };
       const exp = await updateKeystone(slug, (e) => {
         e.gallery = [...e.gallery.filter(real), item];
       });
@@ -137,16 +138,73 @@ export async function DELETE(req: Request, { params }: Ctx) {
   }
 }
 
-/** PUT { order: src[] } → reorder the gallery. */
+/**
+ * PATCH { src, wide?, text?, label? } → change one item: span both vault
+ * columns (landscape photos and clips, audio notes), or a QR card's front
+ * text and label.
+ */
+export async function PATCH(req: Request, { params }: Ctx) {
+  try {
+    const slug = await canonicalSlug((await params).slug);
+    await requireKeystoneOperator(req, slug);
+    const body = (await req.json().catch(() => ({}))) as { src?: string; wide?: unknown; text?: unknown; label?: unknown };
+    const item = (await getKeystone(slug))?.gallery.find((g) => g.src === body.src);
+    if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
+    if (body.wide !== undefined && typeof body.wide !== "boolean") return Response.json({ error: "wide must be true or false" }, { status: 400 });
+    if (body.wide && !canBeWide(item)) return Response.json({ error: "Only landscape photos and clips, and audio notes, can be full width" }, { status: 400 });
+    const isQr = item.kind === "qr";
+    if ((body.text !== undefined || body.label !== undefined) && !isQr) return Response.json({ error: "Only QR codes have card text" }, { status: 400 });
+
+    const exp = await updateKeystone(slug, (e) => {
+      const g = e.gallery.find((x) => x.src === body.src);
+      if (!g) return;
+      if (typeof body.wide === "boolean") {
+        if (body.wide) g.wide = true;
+        else delete g.wide;
+      }
+      if (isQr && body.text !== undefined) {
+        const text = cleanQrText(body.text);
+        if (text) g.text = text;
+        else delete g.text;
+      }
+      if (isQr && typeof body.label === "string") {
+        g.alt = body.label.trim().slice(0, QR_LIMITS.label) || g.alt;
+      }
+    });
+    return Response.json({ ...exp, gallery: await resolveGallery(exp.gallery) });
+  } catch (err) {
+    return handleAuthError(err);
+  }
+}
+
+/**
+ * PUT { order: src[], wide?: src[], rows?: src[] } → reorder the gallery. The
+ * console's arranging also sends the layout: `wide` lists the full-width items
+ * (ignored for items that can't be), `rows` the items that share a row with
+ * the one before them; every other item starts a row.
+ */
 export async function PUT(req: Request, { params }: Ctx) {
   try {
     const slug = await canonicalSlug((await params).slug);
     await requireKeystoneOperator(req, slug);
-    const { order } = (await req.json()) as { order?: string[] };
+    const { order, wide, rows } = (await req.json()) as { order?: string[]; wide?: string[]; rows?: string[] };
     if (!Array.isArray(order)) return Response.json({ error: "order required" }, { status: 400 });
+    if (wide !== undefined && !Array.isArray(wide)) return Response.json({ error: "wide must be a list" }, { status: 400 });
+    if (rows !== undefined && !Array.isArray(rows)) return Response.json({ error: "rows must be a list" }, { status: 400 });
     const exp = await updateKeystone(slug, (e) => {
       const rank = new Map(order.map((src, i) => [src, i]));
       e.gallery.sort((a, b) => (rank.get(a.src) ?? 1e9) - (rank.get(b.src) ?? 1e9));
+      if (wide) {
+        const set = new Set(wide);
+        for (const g of e.gallery) {
+          if (set.has(g.src) && canBeWide(g)) g.wide = true;
+          else delete g.wide;
+        }
+      }
+      if (rows) {
+        const joined = new Set(rows);
+        for (const g of e.gallery) g.sameRow = !g.wide && joined.has(g.src);
+      }
     });
     return Response.json({ ...exp, gallery: await resolveGallery(exp.gallery) });
   } catch (err) {

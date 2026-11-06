@@ -113,7 +113,16 @@ const TABS = [
 ];
 
 /** Frame for every member page: header, tabs, and the signed-out/loading states. */
-export function MemberShell({ title, children }: { title: string; children: (ctx: { who?: string }) => React.ReactNode }) {
+export function MemberShell({
+  title,
+  nav = true,
+  children,
+}: {
+  title: string;
+  /** Show the Home / Operators tabs. */
+  nav?: boolean;
+  children: (ctx: { who?: string }) => React.ReactNode;
+}) {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const pathname = usePathname();
   const who = user?.phone?.number || user?.email?.address;
@@ -140,7 +149,7 @@ export function MemberShell({ title, children }: { title: string; children: (ctx
         <SignedOut onSignIn={login} />
       ) : (
         <>
-          <nav aria-label="Your keystones" className="rise mt-6 flex gap-1 rounded-2xl border border-border-subtle bg-surface-raised p-1">
+          {nav && <nav aria-label="Your keystones" className="rise mt-6 flex gap-1 rounded-2xl border border-border-subtle bg-surface-raised p-1">
             {TABS.map((t) => {
               const active = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href) || (t.href === "/operators" && pathname.startsWith("/o/"));
               return (
@@ -156,7 +165,7 @@ export function MemberShell({ title, children }: { title: string; children: (ctx
                 </Link>
               );
             })}
-          </nav>
+          </nav>}
           {children({ who })}
         </>
       )}

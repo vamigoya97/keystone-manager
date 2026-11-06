@@ -1,32 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ArtworkPosition, ClaimStyle, Keystone, KeystoneTheme, ThemeMedia } from "@/lib/keystones";
+import type { ClaimStyle, Keystone, KeystoneTheme, ThemeMedia } from "@/lib/keystones";
 import { CLAIM_LIMITS, claimStyle, resolveTheme, sanitizeTheme } from "@/lib/theme";
-import { ClaimView, type MintPhase } from "@/components/nfc/views";
+import type { AccessStatus } from "@/lib/useAccess";
+import { PlateClaim, type ClaimAccess, type MintPhase } from "@/components/nfc/plate";
 import type { Detail } from "./AdminApp";
 import MediaPicker from "./MediaPicker";
 import PhonePreview from "./PhonePreview";
 import { Button, Field, Notice, Panel, inputClass, useAdminApi } from "./ui";
 
-/** Claim-screen states the preview can show. */
-type ClaimState = "verifying" | MintPhase;
-/** The preview's states in order, shown as i–iv (the name is the tooltip). */
-const CLAIM_STATES: [ClaimState, string, string][] = [
-  ["verifying", "i", "Aligning"],
-  ["idle", "ii", "Ready to forge"],
-  ["minting", "iii", "Forging"],
-  ["minted", "iv", "Forged"],
+/** The claim screen's states as the preview shows them, numbered i–iv (the name is the tooltip). */
+type PreviewState = { id: string; numeral: string; name: string; status: AccessStatus; access: ClaimAccess; phase: MintPhase };
+const PREVIEW_STATES: PreviewState[] = [
+  { id: "aligning", numeral: "i", name: "Aligning", status: "signed-out", access: "verifying", phase: "idle" },
+  { id: "aligned", numeral: "ii", name: "Aligned: slide to secure", status: "signed-out", access: "chip", phase: "idle" },
+  { id: "securing", numeral: "iii", name: "Securing (sign-in and forging)", status: "not-holder", access: "chip", phase: "minting" },
+  { id: "holder", numeral: "iv", name: "Holder returns: slide to enter", status: "holder", access: null, phase: "idle" },
 ];
 
 /** What this tab owns; the gallery banner is set in the Gallery tab. */
 const own = (t: KeystoneTheme) => JSON.stringify(sanitizeTheme({ background: t.background, claim: t.claim }));
 
 /**
- * The claim screen's look: background media and color, the keystone
- * artwork's size, position, corners and border, the description's type, and
- * the wording and colors of the alerts and hints. A live phone preview shows
- * every state; double-tap the artwork there to play the forge.
+ * The member screens' background and wording: media and color behind the
+ * artwork (and under the vault's description), how dark the media gets, the
+ * text color, and the aligning and not-aligned messages. A live phone preview
+ * shows each claim state; slide the button there to play securing.
  */
 export default function CustomizeTab({
   detail,
@@ -38,7 +38,8 @@ export default function CustomizeTab({
   const { keystone } = detail;
   const api = useAdminApi();
   const [theme, setTheme] = useState<KeystoneTheme>(keystone.theme ?? {});
-  const [claimState, setClaimState] = useState<ClaimState>("idle");
+  const [previewId, setPreviewId] = useState("aligned");
+  const [playing, setPlaying] = useState(false);
   const [replay, setReplay] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -47,6 +48,7 @@ export default function CustomizeTab({
   const dirty = own(theme) !== own(keystone.theme ?? {});
   const style = claimStyle(theme.claim);
   const copy = resolveTheme({ ...keystone, theme: {} }).claim;
+  const state = PREVIEW_STATES.find((s) => s.id === previewId) ?? PREVIEW_STATES[1];
 
   function setBackground(m: ThemeMedia | undefined) {
     setSaved(false);
@@ -81,7 +83,7 @@ export default function CustomizeTab({
     }
   }
 
-  const preview = useMemo(() => ({ ...keystone, theme, galleryCount: keystone.gallery.length }), [keystone, theme]);
+  const preview = useMemo(() => ({ ...keystone, theme }), [keystone, theme]);
   const L = CLAIM_LIMITS;
 
   return (
@@ -90,67 +92,38 @@ export default function CustomizeTab({
       <div className="min-w-0 space-y-4">
         <Panel title="Background">
           <div className="space-y-4">
-            <Field label="Full-screen media" hint="Fills the claim screen and sits behind the vault (9:16 works best)">
+            <Field label="Media" hint="Fills the claim screen behind the artwork and sits under the vault's description (9:16 works best)">
               <MediaPicker slug={keystone.slug} media={theme.background?.media} onChange={setBackground} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <ColorInput
                 label="Color"
-                hint="Behind the media, or the whole background without one"
+                hint="The background without media; standard is light grey"
                 value={theme.claim?.backgroundColor}
-                fallback="#0A0A0A"
+                fallback="#E5E5E2"
                 onChange={(v) => setClaim("backgroundColor", v)}
               />
               <Slider label="Darken media" unit="%" value={style.dim} {...L.dim} onChange={(v) => setClaim("dim", v)} />
+              <ColorInput
+                label="Text color"
+                hint="Vault description, attributes and the slide button; standard follows the background"
+                value={theme.claim?.text?.color}
+                fallback="#161616"
+                onChange={(v) => setClaim("text", { color: v })}
+              />
             </div>
+            <p className="text-[11px] text-text-muted">Media is always darkened at least 45% so text over it stays readable.</p>
           </div>
         </Panel>
 
-        <Panel title="Keystone artwork">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Slider label="Size" unit="%" value={style.artwork.size} {...L.size} onChange={(v) => setClaim("artwork", { size: v })} />
-            <Segmented<ArtworkPosition>
-              label="Position"
-              value={style.artwork.position}
-              options={[["top", "Top"], ["center", "Center"], ["bottom", "Bottom"]]}
-              onChange={(v) => setClaim("artwork", { position: v })}
-            />
-            <Slider label="Corners" unit=" px" value={style.artwork.radius} {...L.radius} onChange={(v) => setClaim("artwork", { radius: v })} />
-            <Toggle label="Shadow" checked={style.artwork.shadow} onChange={(v) => setClaim("artwork", { shadow: v })} />
-            <Slider label="Border" unit=" px" value={style.artwork.borderWidth} {...L.borderWidth} onChange={(v) => setClaim("artwork", { borderWidth: v })} />
-            <ColorInput
-              label="Border color"
-              value={theme.claim?.artwork?.borderColor}
-              fallback={style.artwork.borderColor}
-              onChange={(v) => setClaim("artwork", { borderColor: v })}
-            />
-          </div>
-        </Panel>
-
-        <Panel title="Description text">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Slider label="Size" unit=" px" value={style.text.size} {...L.textSize} onChange={(v) => setClaim("text", { size: v })} />
-            <ColorInput label="Color" value={theme.claim?.text?.color} fallback="#FFFFFF" onChange={(v) => setClaim("text", { color: v })} />
-            <Segmented<"left" | "center">
-              label="Alignment"
-              value={style.text.align}
-              options={[["left", "Left"], ["center", "Center"]]}
-              onChange={(v) => setClaim("text", { align: v })}
-            />
-          </div>
-          <p className="mt-3 text-[11px] text-text-muted">The text itself is the Details description (the one the contract stores).</p>
-        </Panel>
-
-        <Panel title="Alerts & hints">
+        <Panel title="Wording">
           <div className="grid gap-4 sm:grid-cols-2">
             <CopyInput label="While aligning" placeholder={copy.verifying} value={theme.claim?.alerts?.aligning} onChange={(v) => setClaim("alerts", { aligning: v })} />
             <CopyInput label="Not aligned" placeholder={copy.failed} value={theme.claim?.alerts?.failed} onChange={(v) => setClaim("alerts", { failed: v })} />
-            <CopyInput label="Hint · ready to forge" placeholder={copy.doubleTapForge} value={theme.claim?.alerts?.hintForge} onChange={(v) => setClaim("alerts", { hintForge: v })} />
-            <CopyInput label="Hint · signed out" placeholder={copy.doubleTapSecure} value={theme.claim?.alerts?.hintSecure} onChange={(v) => setClaim("alerts", { hintSecure: v })} />
-            <ColorInput label="Alert & hint text color" value={theme.claim?.alerts?.color} fallback="#FFFFFF" onChange={(v) => setClaim("alerts", { color: v })} />
-            <ColorInput label="Alert background" value={theme.claim?.alerts?.background} fallback="#000000" onChange={(v) => setClaim("alerts", { background: v })} />
           </div>
-          <p className="mt-3 text-[11px] text-text-muted">Leave a message empty to use the standard wording shown in grey.</p>
+          <p className="mt-3 text-[11px] text-text-muted">
+            "While aligning" shows on the greyed-out slide button. "Not aligned" is read out and shown on the corner icon. Leave a message empty to use the standard wording shown in grey.
+          </p>
         </Panel>
 
         {error && <Notice tone="bad">{error}</Notice>}
@@ -163,7 +136,7 @@ export default function CustomizeTab({
               }}
               className="mr-auto text-[12px] text-text-muted hover:text-text-primary"
             >
-              Reset styling to standard
+              Reset to standard
             </button>
           )}
           {saved && !dirty && <span className="text-[12px] text-accent">Saved — live for members</span>}
@@ -181,26 +154,36 @@ export default function CustomizeTab({
         </div>
 
         <PhonePreview>
-          <div key={`${claimState}-${replay}`} className="h-full overflow-y-auto">
-            <ClaimView
+          <div key={`${previewId}-${replay}`} className="h-full overflow-y-auto">
+            <PlateClaim
               keystone={preview}
-              status={claimState === "minted" ? "holder" : "not-holder"}
-              access={claimState === "verifying" ? "verifying" : "chip"}
-              phase={claimState === "verifying" ? "idle" : claimState}
+              status={state.status}
+              access={state.access}
+              phase={playing ? "minting" : state.phase}
               onClaim={() => {
-                // Demo the gesture: double-tap the artwork → forging → forged.
-                setClaimState("minting");
-                setTimeout(() => setClaimState((c) => (c === "minting" ? "minted" : c)), 1500);
+                // Demo the slide: securing, then back to where it started.
+                setPlaying(true);
+                setTimeout(() => setPlaying(false), 1800);
               }}
+              onEnter={() => {}}
               contained
             />
           </div>
         </PhonePreview>
 
         <div className="mt-3 flex justify-center gap-1">
-          {CLAIM_STATES.map(([p, numeral, name]) => (
-            <StateChip key={p} active={claimState === p} title={name} onClick={() => { setClaimState(p); setReplay((r) => r + 1); }}>
-              {numeral}
+          {PREVIEW_STATES.map((p) => (
+            <StateChip
+              key={p.id}
+              active={previewId === p.id}
+              title={p.name}
+              onClick={() => {
+                setPreviewId(p.id);
+                setPlaying(false);
+                setReplay((r) => r + 1);
+              }}
+            >
+              {p.numeral}
             </StateChip>
           ))}
         </div>
@@ -249,38 +232,6 @@ function ColorInput({
         )}
       </span>
     </Field>
-  );
-}
-
-function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
-  return (
-    <div>
-      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.14em] text-text-secondary">{label}</span>
-      <div className="flex h-9 gap-1 rounded-xl border border-border-subtle bg-surface-raised p-1">
-        {options.map(([v, text]) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => onChange(v)}
-            className={`flex-1 rounded-lg text-[12px] ${value === v ? "bg-surface-elevated text-text-primary" : "text-text-secondary hover:text-text-primary"}`}
-          >
-            {text}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div>
-      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.14em] text-text-secondary">{label}</span>
-      <label className="flex h-9 cursor-pointer items-center gap-2.5 text-[13px] text-text-secondary">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-[#C8FF2E]" />
-        {checked ? "On" : "Off"}
-      </label>
-    </div>
   );
 }
 

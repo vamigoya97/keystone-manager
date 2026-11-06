@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePrivy } from "@privy-io/react-auth";
+import { useLogin } from "@privy-io/react-auth";
 import type { PublicKeystone } from "@/lib/keystones";
 import { useAccess, useAuthedFetch } from "@/lib/useAccess";
-import { ClaimView, type ClaimAccess, type MintPhase } from "./views";
+import { PlateClaim, type ClaimAccess, type MintPhase } from "./plate";
 
 export type TapParams = { c?: string; s?: string; picc_data?: string; cmac?: string };
 type TapResult = { ok: boolean; error: string | null };
@@ -51,14 +51,20 @@ export default function TokenClaim({
   const router = useRouter();
   const [access, setAccess] = useState<ClaimAccess>(tap ? "verifying" : source);
   const [tapError, setTapError] = useState<string | null>(null);
-  const { login } = usePrivy();
+  // Sign-in is part of the one slide: the screen shows "securing" while Privy is
+  // open, and a closed or failed sign-in puts the slide back.
+  const [signingIn, setSigningIn] = useState(false);
+  const { login } = useLogin({ onError: () => {
+    claimAfterLogin.current = false;
+    setSigningIn(false);
+  } });
   const authedFetch = useAuthedFetch();
   const { status, error: accessError, refetch } = useAccess(slug);
 
+  // Set when the member slides while signed out; the forge resumes after sign-in.
+  const claimAfterLogin = useRef(false);
   const [phase, setPhase] = useState<MintPhase>("idle");
   const [error, setError] = useState<string | null>(null);
-  // Set when the user taps "Claim" while signed out; mint resumes after login.
-  const claimAfterLogin = useRef(false);
 
   const galleryHref = `/x/${slug}/gallery`;
 
@@ -90,9 +96,10 @@ export default function TokenClaim({
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error || "Forge failed");
 
-      refetch();
+      // Straight to the vault: one slide, no stop on a "forged" screen.
       setPhase("minted");
-      setTimeout(() => router.push(galleryHref), 1600);
+      refetch();
+      router.push(galleryHref);
     } catch (e: any) {
       setError(e?.message || "Forge failed");
       setPhase("error");
@@ -109,7 +116,13 @@ export default function TokenClaim({
   useEffect(() => {
     if (claimAfterLogin.current && status === "not-holder") {
       claimAfterLogin.current = false;
+      setSigningIn(false);
       mint();
+    } else if (claimAfterLogin.current && status === "holder") {
+      // Signed in as someone who already holds it: nothing to forge.
+      claimAfterLogin.current = false;
+      setSigningIn(false);
+      router.replace(galleryHref);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
@@ -117,6 +130,7 @@ export default function TokenClaim({
   function onClaim() {
     if (status === "signed-out") {
       claimAfterLogin.current = true;
+      setSigningIn(true);
       login();
     } else {
       mint();
@@ -124,11 +138,12 @@ export default function TokenClaim({
   }
 
   return (
-    <ClaimView
+    <PlateClaim
       keystone={keystone}
       status={status}
       access={access}
       phase={phase}
+      securing={signingIn}
       error={tapError || error || accessError}
       onClaim={onClaim}
       onEnter={() => router.push(galleryHref)}

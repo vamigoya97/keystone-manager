@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { GALLERY_LIMITS, GALLERY_TYPES, KIND_LABEL, QR_LIMITS, cleanQrUrl, formatDuration, uploadKind } from "@/lib/gallery";
-import { galleryKind, type Keystone, type ThemeMedia } from "@/lib/keystones";
+import { GALLERY_LIMITS, GALLERY_TYPES, KIND_LABEL, QR_LIMITS, canBeWide, cleanQrUrl, formatDuration, uploadKind } from "@/lib/gallery";
+import { galleryKind, type GalleryItem, type Keystone, type ThemeMedia } from "@/lib/keystones";
 import { useAuthedFetch } from "@/lib/useAccess";
-import { BackgroundLayer } from "@/components/nfc/themed";
-import { GalleryGrid, GalleryHeader, GalleryTile, MediaViewer, tileAspect } from "@/components/nfc/views";
+import { PlateVault, PlateViewer } from "@/components/nfc/plate";
+import ArrangeGrid, { step, toggleWide } from "./ArrangeGrid";
 import type { Detail } from "./AdminApp";
 import MediaPicker from "./MediaPicker";
 import PhonePreview from "./PhonePreview";
@@ -91,13 +91,12 @@ export default function GalleryTab({
   const [uploading, setUploading] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [qr, setQr] = useState({ url: "", label: "" });
+  const [qr, setQr] = useState({ url: "", label: "", text: "" });
+  // The QR card whose front text is being edited.
+  const [editing, setEditing] = useState<{ src: string; label: string; text: string } | null>(null);
   const [addingQr, setAddingQr] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
   const [savingBanner, setSavingBanner] = useState(false);
-  // Drag and drop reordering: the tile being dragged and the one it's over.
-  const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
 
   const items = keystone.gallery;
   const placeholders = items.length > 0 && items.every((g) => !g.cid && g.kind !== "qr");
@@ -149,7 +148,7 @@ export default function GalleryTab({
     try {
       const exp = await api<Keystone>(`/api/admin/keystones/${keystone.slug}/images`, { method: "POST", json: { kind: "qr", ...qr } });
       onChange({ keystone: exp });
-      setQr({ url: "", label: "" });
+      setQr({ url: "", label: "", text: "" });
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -187,19 +186,71 @@ export default function GalleryTab({
     }
   }
 
-  /** Move the item at `from` to position `to` (arrow buttons and drag and drop), then save the order. */
-  async function moveTo(from: number, to: number) {
-    if (from === to || to < 0 || to >= items.length) return;
-    const order = items.map(keyOf);
-    const [moved] = order.splice(from, 1);
-    order.splice(to, 0, moved);
-    onChange({ keystone: { ...keystone, gallery: order.map((k) => items.find((g) => keyOf(g) === k)!) } });
+  /** Change a QR card's label and front text, and save it. */
+  async function patchItem(src: string, change: { label?: string; text?: string }) {
+    setError(null);
     try {
-      await api(`/api/admin/keystones/${keystone.slug}/images`, { method: "PUT", json: { order } });
+      const exp = await api<Keystone>(`/api/admin/keystones/${keystone.slug}/images`, { method: "PATCH", json: { src, ...change } });
+      onChange({ keystone: exp });
+      return true;
+    } catch (e: any) {
+      setError(e.message);
+      return false;
+    }
+  }
+
+  /** Save a new arrangement (order and full-width items) from the grid's drag and drop or arrow buttons. */
+  async function arrange(next: GalleryItem[]) {
+    onChange({ keystone: { ...keystone, gallery: next } });
+    try {
+      await api(`/api/admin/keystones/${keystone.slug}/images`, {
+        method: "PUT",
+        json: { order: next.map(keyOf), wide: next.filter((g) => g.wide).map(keyOf), rows: next.filter((g) => g.sameRow).map(keyOf) },
+      });
     } catch (e: any) {
       setError(e.message);
       onChange();
     }
+  }
+
+  /** Arrow buttons and the width switch: rearrange, then save. */
+  const rearrange = (next: GalleryItem[] | null) => next && arrange(next);
+
+  /** Hover controls on each tile in the grid. */
+  function controls(i: number) {
+    const item = items[i];
+    const kind = galleryKind(item);
+    return (
+      <>
+        <Button className="h-7 bg-black/60 px-2" disabled={i === 0} onClick={() => rearrange(step(items, keyOf(item), -1))} aria-label="Move earlier">
+          ←
+        </Button>
+        {canBeWide(item) && (
+          <Button
+            className="h-7 bg-black/60 px-2.5"
+            aria-pressed={!!item.wide}
+            title={item.wide ? "Back to half width" : "Span the vault's full width"}
+            onClick={() => rearrange(toggleWide(items, keyOf(item)))}
+          >
+            {item.wide ? "Half width" : "Full width"}
+          </Button>
+        )}
+        {kind === "qr" && (
+          <Button className="h-7 bg-black/60 px-2.5" onClick={() => setEditing({ src: keyOf(item), label: item.alt, text: item.text ?? "" })}>
+            Edit text
+          </Button>
+        )}
+        <Button className="h-7 bg-black/60 px-2.5" onClick={() => setOpen(i)}>
+          Preview
+        </Button>
+        <Button variant="danger" className="h-7 bg-black/60 px-2" onClick={() => remove(keyOf(item))} aria-label={`Remove ${item.alt}`}>
+          ✕
+        </Button>
+        <Button className="h-7 bg-black/60 px-2" disabled={i === items.length - 1} onClick={() => rearrange(step(items, keyOf(item), 1))} aria-label="Move later">
+          →
+        </Button>
+      </>
+    );
   }
 
   const summary = (Object.entries(counts) as [keyof typeof counts, number][])
@@ -291,78 +342,70 @@ export default function GalleryTab({
               Add QR code
             </Button>
           </div>
-          <p className="mt-2 text-[11px] text-text-muted">Holders see a scannable code with an Open link button. Links stay private to holders.</p>
+          <div className="mt-3">
+            <Field label="Front text" hint={`Optional, up to ${QR_LIMITS.text} characters`}>
+              <textarea
+                className={`${inputClass} h-20 resize-none py-2`}
+                placeholder="e.g. Show this at the door on night two for early entry."
+                value={qr.text}
+                maxLength={QR_LIMITS.text}
+                onChange={(e) => setQr((q) => ({ ...q, text: e.target.value }))}
+              />
+            </Field>
+          </div>
+          <p className="mt-2 text-[11px] text-text-muted">
+            Holders see a card with the label and front text; tapping it turns it over to the code (with this keystone&apos;s artwork in the centre). In the viewer the back also has Open link. Links stay private to holders.
+          </p>
         </Panel>
+
+        {editing && (
+          <Panel title="QR card text" action={<button onClick={() => setEditing(null)} className="text-[12px] text-text-muted hover:text-text-primary">Cancel</button>}>
+            <div className="space-y-3">
+              <Field label="Label">
+                <input
+                  className={inputClass}
+                  value={editing.label}
+                  maxLength={QR_LIMITS.label}
+                  onChange={(e) => setEditing((x) => x && { ...x, label: e.target.value })}
+                />
+              </Field>
+              <Field label="Front text" hint={`Up to ${QR_LIMITS.text} characters; leave empty for the label only`}>
+                <textarea
+                  className={`${inputClass} h-20 resize-none py-2`}
+                  value={editing.text}
+                  maxLength={QR_LIMITS.text}
+                  onChange={(e) => setEditing((x) => x && { ...x, text: e.target.value })}
+                />
+              </Field>
+              <div className="flex justify-end">
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (await patchItem(editing.src, { label: editing.label, text: editing.text })) setEditing(null);
+                  }}
+                >
+                  Save text
+                </Button>
+              </div>
+            </div>
+          </Panel>
+        )}
 
         {error && <Notice tone="bad">{error}</Notice>}
         {placeholders && <Notice tone="warn">These are placeholder photos. They&apos;ll be replaced by your first upload.</Notice>}
 
         <Panel
           title={items.length ? `${items.length} items${summary ? ` · ${summary}` : ""}` : "Vault"}
-          action={items.length > 1 ? <span className="text-[11px] text-text-muted">Drag to reorder</span> : undefined}
+          action={
+            items.length > 1 ? (
+              <span className="text-[11px] text-text-muted">Drag beside an item to pair it, or between rows for full width</span>
+            ) : undefined
+          }
         >
           {items.length === 0 ? (
             <p className="py-6 text-center text-[13px] text-text-muted">Nothing in the vault yet.</p>
           ) : (
-            // Same masonry as the vault: each item keeps its real shape.
-            <div className="columns-2 gap-3">
-              {items.map((item, i) => {
-                const kind = galleryKind(item);
-                return (
-                  <figure
-                    key={keyOf(item)}
-                    title={`${i + 1} · ${item.alt} — drag to reorder`}
-                    draggable
-                    onDragStart={(e) => {
-                      setDragFrom(i);
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("text/plain", String(i));
-                    }}
-                    onDragOver={(e) => {
-                      if (dragFrom === null) return;
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      if (dragOver !== i) setDragOver(i);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (dragFrom !== null) moveTo(dragFrom, i);
-                      setDragFrom(null);
-                      setDragOver(null);
-                    }}
-                    onDragEnd={() => {
-                      setDragFrom(null);
-                      setDragOver(null);
-                    }}
-                    className={`group relative mb-3 cursor-grab break-inside-avoid overflow-hidden rounded-2xl bg-surface-raised transition-opacity active:cursor-grabbing ${
-                      dragFrom === i ? "opacity-40" : ""
-                    } ${dragOver === i && dragFrom !== i ? "ring-2 ring-accent ring-offset-2 ring-offset-surface-raised" : ""}`}
-                    style={{ aspectRatio: tileAspect(item) }}
-                  >
-                    <GalleryTile item={item} palette={keystone.palette} eager={false} />
-                    <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-white/80 group-hover:opacity-0">
-                      {KIND_LABEL[kind]}
-                      {item.duration ? ` · ${formatDuration(item.duration)}` : ""}
-                    </span>
-                    {/* One compact row so even short, wide photos keep usable controls. */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/55 p-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                      <Button className="h-7 bg-black/60 px-2" disabled={i === 0} onClick={() => moveTo(i, i - 1)} aria-label="Move earlier">
-                        ←
-                      </Button>
-                      <Button className="h-7 bg-black/60 px-2.5" onClick={() => setOpen(i)}>
-                        Preview
-                      </Button>
-                      <Button variant="danger" className="h-7 bg-black/60 px-2" onClick={() => remove(keyOf(item))} aria-label={`Remove ${item.alt}`}>
-                        ✕
-                      </Button>
-                      <Button className="h-7 bg-black/60 px-2" disabled={i === items.length - 1} onClick={() => moveTo(i, i + 1)} aria-label="Move later">
-                        →
-                      </Button>
-                    </div>
-                  </figure>
-                );
-              })}
-            </div>
+            <ArrangeGrid items={items} onArrange={arrange} controls={controls} />
           )}
         </Panel>
       </div>
@@ -372,23 +415,10 @@ export default function GalleryTab({
         <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-text-secondary">Vault preview · tap an item</p>
         <PhonePreview>
           <div className="h-full overflow-y-auto">
-            <div className="relative min-h-full bg-surface">
-              <BackgroundLayer media={keystone.theme?.background?.media} dim={55} />
-              <div className="relative px-5 pb-10 pt-6">
-                <GalleryHeader
-                  keystone={keystone}
-                  actions={<span className="px-3 py-1.5 text-[11px] text-white/75">Sign out</span>}
-                />
-                {items.length ? (
-                  <GalleryGrid keystone={keystone} images={items} onOpen={setOpen} />
-                ) : (
-                  <p className="mt-10 text-center text-[13px] text-text-muted">Your uploads will appear here.</p>
-                )}
-              </div>
-            </div>
+            <PlateVault keystone={keystone} items={items} onOpen={setOpen} onSignOut={() => {}} contained />
           </div>
           {open !== null && items[open] && (
-            <MediaViewer contained items={items} palette={keystone.palette} index={open} onIndex={setOpen} onClose={() => setOpen(null)} />
+            <PlateViewer contained items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)} logo={keystone.tokenImage} />
           )}
         </PhonePreview>
       </div>

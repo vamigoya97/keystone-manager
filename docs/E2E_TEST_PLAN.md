@@ -68,15 +68,15 @@ Use `npx tsx scripts/chip-url.ts <slug> <chipId>` (or a real NTAG 213 written wi
 
 | # | Step | Expect |
 |---|---|---|
-| 3.1 | Open the chip link | Claim screen right away: background, artwork, description; "Aligning keystone…" alert above the artwork; address becomes `/x/<slug>` |
-| 3.2 | After aligning | Alert clears; no button, just "Double-tap the keystone to secure it". A single tap does nothing |
-| 3.3 | Double-tap the artwork → Privy SMS | After login the forge resumes on its own: small spinner only, no alert or button. Also try double-tap on iPhone (no page zoom) and VoiceOver (hidden Forge keystone button) |
-| 3.4 | Forged | Check mark + confetti, no Owned badge or text; lands in the vault |
-| 3.5 | Reload `/x/<slug>` | No re-verification; holder → **Enter the vault** |
+| 3.1 | Open the chip link | Claim screen right away: background and centred artwork only; slide button greyed out with a spinning knob ("Aligning keystone…"); chip icon top-left; address becomes `/x/<slug>` |
+| 3.2 | After aligning | Target icon top-left; slide button active ("Secure keystone"). Tapping the artwork does nothing; a short drag snaps back |
+| 3.3 | Slide to the end → Privy SMS | Knob stays parked and spinning ("Securing your keystone…") through sign-in and forging, with no second action. Also try closing Privy (slide comes back), iPhone Safari (no page scroll while sliding) and VoiceOver (knob is a button) |
+| 3.4 | Forge succeeds | Straight to the vault, no "Forged" screen or confetti |
+| 3.5 | Reload `/x/<slug>` | No re-verification; holder → slide **Enter the vault** |
 | 3.6 | Same chip link again while holding | Straight to the vault |
 | 3.7 | Member B opens the same chip link | Aligns, but forging fails: "This item's keystone has already been secured by another account" |
-| 3.8 | Tamper with `s=` | "This keystone couldn't be aligned" + retry hint; no button |
-| 3.9 | Open `/x/<slug>` with no tap (fresh browser profile) | "Tap your item to secure", no button |
+| 3.8 | Tamper with `s=` | Warning icon (its tooltip: "This keystone couldn't be aligned…"); slide button stays greyed out |
+| 3.9 | Open `/x/<slug>` with no tap (fresh browser profile) | Phone icon top-left; slide button greyed out |
 | 3.10 | Wait > 24 h or clear cookies, then forge | Refused; must tap again |
 
 ## 4. Member claim — NTAG 424 DNA
@@ -92,13 +92,15 @@ Use `npx tsx scripts/chip-url.ts <slug> <chipId>` (or a real NTAG 213 written wi
 
 | # | Step | Expect |
 |---|---|---|
-| 5.1 | Gallery as holder | Banner + Sign out, no title text or Invite button; photos load as signed links |
+| 5.1 | Gallery as holder | Banner at the very top (no header bar); items edge to edge in two columns; About this keystone (description, attributes) on the operator's background; Sign out at the bottom; items load as signed links |
 | 5.2 | Copy a photo URL, open after 1 h | Expired |
-| 5.3 | Tap a photo (real phones) | Opens full screen on that photo; swipe snaps one at a time; counter + dots track; stops at ends; ✕ / backdrop / Esc close |
+| 5.3 | Tap a photo (real phones) | Black full-screen viewer on that photo; swipe snaps one at a time; caption and "N of M" track; Close / Esc close |
 | 5.3b | Clip, audio note and QR code in the viewer (real phones) | Clip plays inline with controls (iPhone: no forced fullscreen); audio plays; swiping away pauses both; QR scans from another phone and Open link opens it |
 | 5.4 | Non-holder or signed-out opens `/x/<slug>/gallery` | Redirected to the claim page |
-| 5.5 | "More from {operator}" / "Your other operators" | Appear only when A holds other keystones |
-| 5.6 | Open an old `/i/<code>` link | Not found (invites were removed) |
+| 5.5 | Notch and home bar (iPhone) | Corner icon, slide button, viewer Close and caption clear the status bar and home indicator |
+| 5.6 | Gallery tab: arrange by drag and drop | Drop a tile on the right half of another: it joins that row beside it (a fourth is refused); drag a landscape photo or an audio note onto a bar between rows: it gets a full-width row there; ← / → move one place; Full width / Half width switch in place; reload: the vault and the phone preview show exactly the arranged rows; upload a new photo: it pairs at the end; delete an item: nothing is left alone where there's room |
+| 5.7 | QR card (real phones) | Front shows label + text; tap turns it to the code with the keystone artwork in the centre; another phone's camera scans it; tap turns it back; in the viewer the back has Open link; **Edit text** in the Gallery tab updates the front |
+| 5.6 | Gallery tab: arrange by drag and drop | Drop a tile on the right half of another: it joins that row beside it (a fourth is refused); drag a landscape photo or an audio note onto a bar between rows: it gets a full-width row there; ← / → move one place; Full width / Half width switch in place; reload: the vault and the phone preview show exactly the arranged rows; upload a new photo: it pairs at the end; delete an item: nothing is left alone where there's room |
 
 ## 6. Members tab (operator)
 
@@ -122,8 +124,8 @@ Use `npx tsx scripts/chip-url.ts <slug> <chipId>` (or a real NTAG 213 written wi
 
 | # | Step | Expect |
 |---|---|---|
-| 8.1 | `/` signed out | "Tap your item to begin" + Sign in |
-| 8.2 | `/` signed in (A) | Welcome back; Upcoming & live / Ongoing / Past; Operators preview |
+| 8.1 | `/` signed out | "Hold your phone to your item." + Sign in |
+| 8.2 | `/` signed in (A) | Held keystones as square artwork, two per row, newest claim first; each opens its vault; Sign out top-right |
 | 8.3 | `/operators`, `/o/<operator>` | Current vs Former operators; per-operator sections |
 | 8.4 | After a transfer (2.6) | Sender sees "No longer held"; receiver sees "Received" |
 

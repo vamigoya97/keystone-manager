@@ -55,6 +55,16 @@ export interface GalleryItem {
   duration?: number;
   /** QR codes: the link it encodes (only ever sent to holders, like the files). */
   url?: string;
+  /** QR codes: text on the card's front; tapping the card flips it to the code. */
+  text?: string;
+  /** Spans both columns of the vault (landscape photos and clips, audio notes). */
+  wide?: boolean;
+  /**
+   * Set when an operator has arranged the vault: true = same row as the item
+   * before it, false = starts a new row. Unset (never arranged, or added
+   * since) = paired automatically.
+   */
+  sameRow?: boolean;
 }
 
 export const galleryKind = (g: Pick<GalleryItem, "kind">): GalleryKind => g.kind ?? "image";

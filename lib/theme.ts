@@ -26,8 +26,6 @@ export const CLAIM_LIMITS = {
 const DEFAULT_COPY = {
   aligning: "Aligning keystone…",
   failed: "This keystone couldn't be aligned.",
-  hintForge: "Double-tap the keystone to forge",
-  hintSecure: "Double-tap the keystone to secure it",
 };
 
 /** The claim screen's styling with defaults filled in. */
@@ -51,7 +49,7 @@ export function claimStyle(c: ClaimStyle = {}) {
 
 type Named = Pick<Keystone, "name" | "description" | "theme">;
 
-/** The operator's media and styling plus the standard copy and effects for every step. */
+/** The operator's media and styling plus the standard wording for the member screens. */
 export function resolveTheme(exp: Named) {
   const t: KeystoneTheme = exp.theme ?? {};
   const alerts = t.claim?.alerts ?? {};
@@ -63,14 +61,8 @@ export function resolveTheme(exp: Named) {
       failed: DEFAULT_COPY.failed,
       /** The operator's own "not aligned" message, shown instead of the server's reason. */
       failedCustom: alerts.failed,
+      /** The slide button's label once aligned; one slide signs in (if needed) and forges. */
       claimButton: "Secure keystone",
-      mintButton: "Forge keystone",
-      // Forging is a double-tap on the artwork (no button), like confirming Apple Pay.
-      doubleTapForge: alerts.hintForge || DEFAULT_COPY.hintForge,
-      doubleTapSecure: alerts.hintSecure || DEFAULT_COPY.hintSecure,
-      doubleTapRetry: "Double-tap the keystone to try again",
-      minting: "Forging your keystone…",
-      minted: "Forged — entering the vault",
       enterButton: "Enter the vault",
     },
     gallery: {
