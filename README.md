@@ -64,6 +64,25 @@ other ports.
 Data (operators, keystones, members, chip counters) is kept in `data/store.json`. It's a single-server JSON
 store; swap `lib/store.ts` for a database before deploying to serverless.
 
+### Design lab (development only)
+
+- `/lab` shows every member screen and state (claim steps, vault, viewer, QR cards, home) side by side, rendered by
+  the real components with a real keystone and sample data, plus the Gallery tab's arranging grid. No chip, sign-in
+  or wallet needed.
+- `/lab/console` runs the real operator console on this machine's operators, keystones, members and vaults without
+  signing in. Its API calls are answered from a snapshot (`AdminApiOverride` in `components/admin/ui.tsx`), so
+  saving is off and nothing can change real data.
+
+Both return 404 in a production build.
+
+### Operator console UI
+
+The console (`/operator`) is built with [shadcn/ui](https://ui.shadcn.com) (Radix + Tailwind): components live in
+`components/ui/` (added with `npx shadcn add …`, config in `components.json`), and the console's own building
+blocks in `components/admin/ui.tsx` (Panel, Button, Field, Badge, Notice, TabBar, ConsoleRoot) wrap them. Its dark
+neutral theme is scoped to the `.kit-shadcn` wrapper (`ConsoleRoot`) in `app/globals.css`, and dialogs, menus and
+popovers mount inside it, so member screens keep their own look.
+
 ## Scripts
 
 | Command | What |

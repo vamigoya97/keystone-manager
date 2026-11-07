@@ -55,6 +55,9 @@ export default function LabView({
         <div>
           <p className="text-[12px] text-text-secondary">Design lab, development only</p>
           <h1 className="mt-1 text-[28px] font-semibold tracking-tight">Member screens</h1>
+          <a href="/lab/console" className="mt-1 inline-block text-[13px] text-accent">
+            Operator console (sample data) ↗
+          </a>
           <p className="mt-1 max-w-xl text-[13px] text-text-secondary">
             The live components with sample state. Edit <code className="font-mono text-text-primary">components/nfc/plate.tsx</code> and every phone updates.
           </p>

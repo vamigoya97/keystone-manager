@@ -9,7 +9,11 @@ import ArrangeGrid, { step, toggleWide } from "./ArrangeGrid";
 import type { Detail } from "./AdminApp";
 import MediaPicker from "./MediaPicker";
 import PhonePreview from "./PhonePreview";
-import { Button, Field, Notice, Panel, inputClass, useAdminApi } from "./ui";
+import { ArrowLeftIcon, ArrowRightIcon, Trash2Icon, UploadIcon } from "lucide-react";
+import { Button as UiButton } from "@/components/ui/button";
+import { Button, Field, Notice, Panel, useAdminApi } from "./ui";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 type Measured = { width: number; height: number; duration?: number };
 
@@ -222,12 +226,12 @@ export default function GalleryTab({
     const kind = galleryKind(item);
     return (
       <>
-        <Button className="h-7 bg-black/60 px-2" disabled={i === 0} onClick={() => rearrange(step(items, keyOf(item), -1))} aria-label="Move earlier">
-          ←
+        <Button className="h-7 bg-black/60 px-2 text-white" disabled={i === 0} onClick={() => rearrange(step(items, keyOf(item), -1))} aria-label="Move earlier">
+          <ArrowLeftIcon />
         </Button>
         {canBeWide(item) && (
           <Button
-            className="h-7 bg-black/60 px-2.5"
+            className="h-7 bg-black/60 px-2.5 text-white"
             aria-pressed={!!item.wide}
             title={item.wide ? "Back to half width" : "Span the vault's full width"}
             onClick={() => rearrange(toggleWide(items, keyOf(item)))}
@@ -236,18 +240,18 @@ export default function GalleryTab({
           </Button>
         )}
         {kind === "qr" && (
-          <Button className="h-7 bg-black/60 px-2.5" onClick={() => setEditing({ src: keyOf(item), label: item.alt, text: item.text ?? "" })}>
+          <Button className="h-7 bg-black/60 px-2.5 text-white" onClick={() => setEditing({ src: keyOf(item), label: item.alt, text: item.text ?? "" })}>
             Edit text
           </Button>
         )}
-        <Button className="h-7 bg-black/60 px-2.5" onClick={() => setOpen(i)}>
+        <Button className="h-7 bg-black/60 px-2.5 text-white" onClick={() => setOpen(i)}>
           Preview
         </Button>
-        <Button variant="danger" className="h-7 bg-black/60 px-2" onClick={() => remove(keyOf(item))} aria-label={`Remove ${item.alt}`}>
-          ✕
+        <Button variant="danger" className="h-7 bg-black/60 px-2 text-white" onClick={() => remove(keyOf(item))} aria-label={`Remove ${item.alt}`}>
+          <Trash2Icon />
         </Button>
-        <Button className="h-7 bg-black/60 px-2" disabled={i === items.length - 1} onClick={() => rearrange(step(items, keyOf(item), 1))} aria-label="Move later">
-          →
+        <Button className="h-7 bg-black/60 px-2 text-white" disabled={i === items.length - 1} onClick={() => rearrange(step(items, keyOf(item), 1))} aria-label="Move later">
+          <ArrowRightIcon />
         </Button>
       </>
     );
@@ -283,8 +287,8 @@ export default function GalleryTab({
             upload(e.dataTransfer.files);
           }}
           onClick={() => !uploading && input.current?.click()}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
-            dragging ? "border-accent bg-accent-glow" : "border-border-default hover:border-accent/40"
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+            dragging ? "border-ring bg-secondary/50" : "border-input hover:border-ring hover:bg-secondary/30"
           }`}
         >
           <input
@@ -300,14 +304,14 @@ export default function GalleryTab({
           />
           {uploading ? (
             <>
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-              <p className="mt-3 text-[13px] text-text-secondary">Uploading to IPFS… {uploading} left</p>
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-ring border-t-transparent" />
+              <p className="mt-3 text-sm text-muted-foreground">Uploading to IPFS… {uploading} left</p>
             </>
           ) : (
             <>
-              <div className="text-2xl text-accent">＋</div>
-              <p className="mt-2 text-[13px] font-medium">Drop photos, short clips or audio notes here, or click to upload</p>
-              <p className="mt-1 text-[11px] text-text-muted">
+              <UploadIcon className="size-6 text-muted-foreground" />
+              <p className="mt-2 text-sm font-medium">Drop photos, short clips or audio notes here, or click to upload</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Photos up to {GALLERY_LIMITS.image.bytes / MB} MB · clips up to {GALLERY_LIMITS.video.seconds} s and {GALLERY_LIMITS.video.bytes / MB} MB ·
                 audio up to {GALLERY_LIMITS.audio.seconds / 60} min · stored privately, visible only to holders
               </p>
@@ -318,8 +322,8 @@ export default function GalleryTab({
         <Panel title="Add a QR code">
           <div className="grid gap-3 sm:grid-cols-[1fr_200px_auto] sm:items-end">
             <Field label="Link">
-              <input
-                className={inputClass}
+              <Input
+
                 type="url"
                 inputMode="url"
                 placeholder="https://"
@@ -329,8 +333,8 @@ export default function GalleryTab({
               />
             </Field>
             <Field label="Label">
-              <input
-                className={inputClass}
+              <Input
+
                 placeholder="e.g. Afterparty RSVP"
                 value={qr.label}
                 maxLength={QR_LIMITS.label}
@@ -344,8 +348,8 @@ export default function GalleryTab({
           </div>
           <div className="mt-3">
             <Field label="Front text" hint={`Optional, up to ${QR_LIMITS.text} characters`}>
-              <textarea
-                className={`${inputClass} h-20 resize-none py-2`}
+              <Textarea
+                className="h-20 resize-none py-2"
                 placeholder="e.g. Show this at the door on night two for early entry."
                 value={qr.text}
                 maxLength={QR_LIMITS.text}
@@ -353,25 +357,25 @@ export default function GalleryTab({
               />
             </Field>
           </div>
-          <p className="mt-2 text-[11px] text-text-muted">
+          <p className="mt-2 text-xs text-muted-foreground">
             Holders see a card with the label and front text; tapping it turns it over to the code (with this keystone&apos;s artwork in the centre). In the viewer the back also has Open link. Links stay private to holders.
           </p>
         </Panel>
 
         {editing && (
-          <Panel title="QR card text" action={<button onClick={() => setEditing(null)} className="text-[12px] text-text-muted hover:text-text-primary">Cancel</button>}>
+          <Panel title="QR card text" action={<UiButton variant="ghost" size="sm" onClick={() => setEditing(null)}>Cancel</UiButton>}>
             <div className="space-y-3">
               <Field label="Label">
-                <input
-                  className={inputClass}
+                <Input
+
                   value={editing.label}
                   maxLength={QR_LIMITS.label}
                   onChange={(e) => setEditing((x) => x && { ...x, label: e.target.value })}
                 />
               </Field>
               <Field label="Front text" hint={`Up to ${QR_LIMITS.text} characters; leave empty for the label only`}>
-                <textarea
-                  className={`${inputClass} h-20 resize-none py-2`}
+                <Textarea
+                  className="h-20 resize-none py-2"
                   value={editing.text}
                   maxLength={QR_LIMITS.text}
                   onChange={(e) => setEditing((x) => x && { ...x, text: e.target.value })}
@@ -398,12 +402,12 @@ export default function GalleryTab({
           title={items.length ? `${items.length} items${summary ? ` · ${summary}` : ""}` : "Vault"}
           action={
             items.length > 1 ? (
-              <span className="text-[11px] text-text-muted">Drag beside an item to pair it, or between rows for full width</span>
+              <span className="text-xs text-muted-foreground">Drag beside an item to pair it, or between rows for full width</span>
             ) : undefined
           }
         >
           {items.length === 0 ? (
-            <p className="py-6 text-center text-[13px] text-text-muted">Nothing in the vault yet.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">Nothing in the vault yet.</p>
           ) : (
             <ArrangeGrid items={items} onArrange={arrange} controls={controls} />
           )}
@@ -412,7 +416,7 @@ export default function GalleryTab({
 
       {/* ── Live preview ── */}
       <div className="lg:sticky lg:top-20 lg:self-start">
-        <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-text-secondary">Vault preview · tap an item</p>
+        <p className="mb-3 text-xs text-muted-foreground">Vault preview · tap an item</p>
         <PhonePreview>
           <div className="h-full overflow-y-auto">
             <PlateVault keystone={keystone} items={items} onOpen={setOpen} onSignOut={() => {}} contained />

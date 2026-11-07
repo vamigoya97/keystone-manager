@@ -5,7 +5,11 @@ import { slugify, type Keystone, type KeystoneTrait } from "@/lib/keystones";
 import { PASS_LIMITS, TRAIT_LIMITS } from "@/lib/passMetadata";
 import type { Detail } from "./AdminApp";
 import ContractSection, { ArtworkPanel } from "./ContractSection";
-import { Button, Field, Notice, Panel, inputClass, useAdminApi } from "./ui";
+import { PlusIcon, XIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button, Field, Notice, Panel, useAdminApi } from "./ui";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 /**
  * Everything about the keystone itself: details, artwork and its on-chain
@@ -84,11 +88,11 @@ export default function DetailsTab({ detail, onChange }: { detail: Detail; onCha
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
                 <Field label="Name" hint={linkHint}>
-                  <input className={inputClass} value={form.name} maxLength={PASS_LIMITS.name} onChange={(e) => set("name", e.target.value)} />
+                  <Input value={form.name} maxLength={PASS_LIMITS.name} onChange={(e) => set("name", e.target.value)} />
                 </Field>
                 <Field label="Symbol" hint={symbolLocked ? "Fixed by the deployed contract" : undefined}>
-                  <input
-                    className={`${inputClass} font-mono uppercase`}
+                  <Input
+                    className="font-mono uppercase"
                     value={form.symbol}
                     maxLength={PASS_LIMITS.symbol}
                     disabled={symbolLocked}
@@ -97,8 +101,8 @@ export default function DetailsTab({ detail, onChange }: { detail: Detail; onCha
                 </Field>
               </div>
               <Field label="Description" hint={`${form.description.length}/${PASS_LIMITS.description}`}>
-                <textarea
-                  className={`${inputClass} min-h-[96px] resize-y`}
+                <Textarea
+                  className="min-h-[96px] resize-y"
                   value={form.description}
                   maxLength={PASS_LIMITS.description}
                   onChange={(e) => set("description", e.target.value)}
@@ -119,7 +123,7 @@ export default function DetailsTab({ detail, onChange }: { detail: Detail; onCha
               />
               {error && <Notice tone="bad">{error}</Notice>}
               <div className="flex items-center justify-end gap-3 pt-1">
-                {saved && !unsaved && <span className="text-[12px] text-accent">Saved</span>}
+                {saved && !unsaved && <span className="text-sm text-foreground">Saved</span>}
                 <Button type="submit" variant="primary" busy={busy}>
                   Save details
                 </Button>
@@ -191,11 +195,11 @@ function TraitsField({
     });
   const addable = BUILT_INS.filter((b) => !shown.has(b.key) && (b.key !== "endDate" || shown.has("startDate")));
   const update = (i: number, patch: Partial<KeystoneTrait>) => onChange(traits.map((t, j) => (j === i ? { ...t, ...patch } : t)));
-  const label = `${inputClass} flex items-center text-text-secondary`;
+  const label = "flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground";
 
   return (
     <div>
-      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.14em] text-text-secondary">Traits</span>
+      <span className="mb-2 block text-sm leading-none font-medium">Traits</span>
       <div className="space-y-2">
         {BUILT_INS.filter((b) => shown.has(b.key)).map((b) => (
           <div key={b.key} className="grid grid-cols-[1fr_1fr_104px_auto] gap-2">
@@ -203,8 +207,7 @@ function TraitsField({
               {b.label}
             </span>
             {b.key === "location" ? (
-              <input
-                className={inputClass}
+              <Input
                 aria-label="Location"
                 placeholder="Brooklyn, NY"
                 value={location}
@@ -212,9 +215,9 @@ function TraitsField({
                 onChange={(e) => onBuiltIn("location", e.target.value)}
               />
             ) : (
-              <input
+              <Input
                 type="date"
-                className={inputClass}
+
                 aria-label={b.label}
                 value={values[b.key]}
                 min={b.key === "endDate" ? startDate || undefined : undefined}
@@ -230,22 +233,20 @@ function TraitsField({
                 onBuiltIn(b.key, "");
               }}
             >
-              ✕
+              <XIcon />
             </Button>
           </div>
         ))}
         {traits.map((t, i) => (
           <div key={i} className="grid grid-cols-[1fr_1fr_104px_auto] gap-2">
-            <input
-              className={inputClass}
+            <Input
               aria-label="Trait name"
               placeholder="Name, e.g. Edition"
               value={t.key}
               maxLength={TRAIT_LIMITS.key}
               onChange={(e) => update(i, { key: e.target.value })}
             />
-            <input
-              className={inputClass}
+            <Input
               aria-label="Trait value"
               placeholder={t.type === "number" ? "e.g. 250" : "Value, e.g. Founders"}
               inputMode={t.type === "number" ? "decimal" : undefined}
@@ -253,32 +254,34 @@ function TraitsField({
               maxLength={TRAIT_LIMITS.value}
               onChange={(e) => update(i, { value: e.target.value })}
             />
-            <select
-              className={inputClass}
-              aria-label="Trait type"
-              value={t.type ?? "text"}
-              onChange={(e) => update(i, { type: e.target.value === "number" ? "number" : undefined })}
-            >
-              <option value="text">Text</option>
-              <option value="number">Number</option>
-            </select>
+            <Select value={t.type ?? "text"} onValueChange={(v) => update(i, { type: v === "number" ? "number" : undefined })}>
+              <SelectTrigger aria-label="Trait type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="number">Number</SelectItem>
+              </SelectContent>
+            </Select>
             <Button type="button" aria-label={`Remove ${t.key || "trait"}`} onClick={() => onChange(traits.filter((_, j) => j !== i))}>
-              ✕
+              <XIcon />
             </Button>
           </div>
         ))}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Button type="button" disabled={traits.length >= TRAIT_LIMITS.count} onClick={() => onChange([...traits, { key: "", value: "" }])}>
-          + Add trait
+          <PlusIcon />
+          Add trait
         </Button>
         {addable.map((b) => (
           <Button key={b.key} type="button" onClick={() => show(b.key, true)}>
-            + {b.label}
+            <PlusIcon />
+            {b.label}
           </Button>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-text-muted">
+      <p className="mt-2 text-xs text-muted-foreground">
         Committed as attributes in the contract: Location and dates first, then your traits (up to {TRAIT_LIMITS.count}). Dates also decide Upcoming,
         Live and Past.
       </p>

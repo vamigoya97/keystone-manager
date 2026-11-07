@@ -48,7 +48,7 @@ export default function MediaPicker({
   return (
     <div>
       <div className="flex items-center gap-3">
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border-default bg-surface">
+        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-input bg-background">
           {media && <MediaView media={media} className="h-full w-full object-cover" />}
         </div>
         <input
@@ -64,9 +64,9 @@ export default function MediaPicker({
         />
         <Button busy={busy} onClick={() => input.current?.click()}>{media ? "Replace" : "Upload"}</Button>
         {media && <Button onClick={() => onChange(undefined)}>Remove</Button>}
-        <span className="text-[11px] text-text-muted">Image, GIF, or MP4/WebM up to {VIDEO_MAX_SECONDS}s</span>
+        <span className="text-xs text-muted-foreground">Image, GIF, or MP4/WebM up to {VIDEO_MAX_SECONDS}s</span>
       </div>
-      {error && <p className="mt-2 text-[12px] text-rose">{error}</p>}
+      {error && <p className="mt-2 text-sm text-rose">{error}</p>}
     </div>
   );
 }

@@ -1,12 +1,28 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
+import { Loader2Icon } from "lucide-react";
 import { useAuthedFetch } from "@/lib/useAccess";
+import { cn } from "@/lib/utils";
+import { Alert as UiAlert, AlertDescription } from "@/components/ui/alert";
+import { Badge as UiBadge } from "@/components/ui/badge";
+import { Button as UiButton } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export type AdminApi = <T>(path: string, init?: RequestInit & { json?: unknown }) => Promise<T>;
+
+/**
+ * Replaces the console's API calls, e.g. the design lab's sandbox, which
+ * serves sample data and saves nothing. Unset in the real console.
+ */
+export const AdminApiOverride = createContext<AdminApi | null>(null);
 
 /** JSON calls to /api/admin/* with the operator's Privy token. Throws on non-2xx. */
-export function useAdminApi() {
+export function useAdminApi(): AdminApi {
+  const override = useContext(AdminApiOverride);
   const authedFetch = useAuthedFetch();
-  return useCallback(
+  const real = useCallback(
     async <T,>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> => {
       const { json, ...rest } = init;
       const res = await authedFetch(path, {
@@ -25,6 +41,7 @@ export function useAdminApi() {
     },
     [authedFetch]
   );
+  return override ?? real;
 }
 
 export function useCopy() {
@@ -40,6 +57,17 @@ export function useCopy() {
 
 export const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
+/**
+ * The console's building blocks, all shadcn/ui (components/ui). The console
+ * renders inside a "dark kit-shadcn" wrapper (ConsoleRoot), where shadcn's
+ * dark neutral theme applies (app/globals.css).
+ */
+
+/** Wraps the console so shadcn/ui's theme applies to it and to its pop-ups. */
+export function ConsoleRoot({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn("dark kit-shadcn min-h-[100dvh] bg-background text-foreground antialiased", className)}>{children}</div>;
+}
+
 export function Panel({
   title,
   action,
@@ -52,15 +80,15 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl border border-border-subtle bg-surface-raised p-5 ${className}`}>
+    <Card className={cn("gap-4 px-6", className)}>
       {(title || action) && (
-        <div className="mb-4 flex items-center justify-between gap-3">
-          {title && <h3 className="text-[13px] font-semibold tracking-wide">{title}</h3>}
+        <div className="flex items-center justify-between gap-3">
+          {title && <CardTitle className="text-sm">{title}</CardTitle>}
           {action}
         </div>
       )}
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -69,24 +97,23 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   busy?: boolean;
 };
 
+/** primary → shadcn default, ghost → outline, danger → outline in the destructive color. */
 export function Button({ variant = "ghost", busy, children, className = "", disabled, ...rest }: ButtonProps) {
-  const styles = {
-    primary: "bg-accent text-surface hover:brightness-110 font-semibold",
-    ghost: "border border-border-default text-text-primary hover:bg-surface-elevated",
-    danger: "border border-rose/30 text-rose hover:bg-rose-dim",
-  }[variant];
   return (
-    <button
+    <UiButton
       {...rest}
+      size="sm"
+      variant={variant === "primary" ? "default" : "outline"}
       disabled={disabled || busy}
-      className={`inline-flex h-9 items-center justify-center gap-2 rounded-xl px-4 text-[12px] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${styles} ${className}`}
+      className={cn(variant === "danger" && "text-destructive hover:text-destructive", className)}
     >
-      {busy && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+      {busy && <Loader2Icon className="animate-spin" />}
       {children}
-    </button>
+    </UiButton>
   );
 }
 
+/** A label above a control, with an optional description below. */
 export function Field({
   label,
   hint,
@@ -97,38 +124,44 @@ export function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.14em] text-text-secondary">
-        {label}
-      </span>
+    <label className="grid gap-2">
+      <span className="text-sm leading-none font-medium select-none">{label}</span>
       {children}
-      {hint && <span className="mt-1.5 block text-[11px] text-text-muted">{hint}</span>}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </label>
   );
 }
 
-export const inputClass =
-  "w-full rounded-xl border border-border-default bg-surface px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted focus:border-accent/60 focus:outline-none";
-
 export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "good" | "bad" | "warn"; children: React.ReactNode }) {
-  const styles = {
-    neutral: "bg-surface-elevated text-text-secondary",
-    good: "bg-accent-dim text-accent",
-    bad: "bg-rose-dim text-rose",
-    warn: "bg-amber-dim text-amber",
-  }[tone];
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] ${styles}`}>
+    <UiBadge
+      variant={tone === "neutral" ? "secondary" : tone === "bad" ? "destructive" : "outline"}
+      className={cn(tone === "warn" && "text-amber", tone === "good" && "text-emerald")}
+    >
       {children}
-    </span>
+    </UiBadge>
   );
 }
 
 export function Notice({ tone = "neutral", children }: { tone?: "neutral" | "bad" | "warn"; children: React.ReactNode }) {
-  const styles = {
-    neutral: "border-border-subtle text-text-secondary",
-    bad: "border-rose/30 bg-rose-dim text-rose",
-    warn: "border-amber/30 bg-amber-dim text-amber",
-  }[tone];
-  return <div className={`rounded-xl border px-3.5 py-2.5 text-[12px] leading-relaxed ${styles}`}>{children}</div>;
+  return (
+    <UiAlert variant={tone === "bad" ? "destructive" : "default"} className={cn(tone === "warn" && "border-amber/40 text-amber")}>
+      <AlertDescription className={cn(tone === "warn" && "text-amber/90")}>{children}</AlertDescription>
+    </UiAlert>
+  );
+}
+
+/** The keystone's tab bar (Details, Customize, Gallery…). */
+export function TabBar<T extends string>({ tabs, value, onChange }: { tabs: readonly T[]; value: T; onChange: (t: T) => void }) {
+  return (
+    <Tabs value={value} onValueChange={(v) => onChange(v as T)}>
+      <TabsList>
+        {tabs.map((t) => (
+          <TabsTrigger key={t} value={t}>
+            {t}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
 }

@@ -10,7 +10,14 @@ import {
   type Operator,
 } from "@/lib/keystones";
 import type { PassContent, PassMetadata } from "@/lib/passMetadata";
-import { Badge, Button, Field, Notice, inputClass, shortAddr, useAdminApi, useCopy } from "./ui";
+import { ChevronDownIcon, CopyIcon, ExternalLinkIcon, Loader2Icon, LogOutIcon } from "lucide-react";
+import { Button as UiButton } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { Badge, Button, ConsoleRoot, Field, Notice, TabBar, shortAddr, useAdminApi, useCopy } from "./ui";
 import GalleryTab from "./GalleryTab";
 import MembersTab from "./MembersTab";
 import DetailsTab from "./DetailsTab";
@@ -53,8 +60,69 @@ type Tab = (typeof TABS)[number];
 const LOW_RUNWAY = 50;
 const OPERATOR_KEY = "operator.selected";
 
+/** The console at /operator: Privy sign-in and the operator check, then the console itself. */
 export default function AdminApp() {
   const { ready, authenticated, login, logout, user } = usePrivy();
+  const [gate, setGate] = useState<{ status?: number; message: string } | null>(null);
+
+  if (!ready) return <Centered><Spinner /></Centered>;
+
+  if (!authenticated) {
+    return (
+      <Centered>
+        <div className="w-full max-w-sm text-center">
+          <Logo />
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight">Operator console</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Sign in with an operator phone number, email or wallet.</p>
+          <Button variant="primary" className="mt-8 h-12 w-full text-sm" onClick={login}>
+            Sign in
+          </Button>
+        </div>
+      </Centered>
+    );
+  }
+
+  if (gate) {
+    const who =
+      user?.phone?.number || user?.email?.address || (user?.wallet?.address && shortAddr(user.wallet.address));
+    return (
+      <Centered>
+        <div className="w-full max-w-sm text-center">
+          <Logo />
+          <h1 className="mt-6 text-xl font-semibold">
+            {gate.status === 403 ? "Not an operator" : "Can't open the console"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {gate.status === 403 ? `${who ?? "This account"} isn't on the operator list.` : gate.message}
+          </p>
+          <Button className="mt-8" onClick={() => logout()}>
+            Sign out
+          </Button>
+        </div>
+      </Centered>
+    );
+  }
+
+  return (
+    <ConsoleRoot>
+      <OperatorConsole onSignOut={() => logout()} onGateError={setGate} />
+    </ConsoleRoot>
+  );
+}
+
+/**
+ * The console once signed in: operators and their keystones, then the
+ * selected keystone's tabs. All data comes through useAdminApi, so the design
+ * lab can run it on sample data (AdminApiOverride).
+ */
+export function OperatorConsole({
+  onSignOut,
+  onGateError,
+}: {
+  onSignOut: () => void;
+  /** The first load failed (not an operator, or the server is unreachable). */
+  onGateError?: (error: { status?: number; message: string }) => void;
+}) {
   const api = useAdminApi();
 
   const [operators, setOperators] = useState<Operator[] | null>(null);
@@ -68,12 +136,14 @@ export default function AdminApp() {
   const [tab, setTab] = useState<Tab>("Details");
   const [creating, setCreating] = useState(false);
   const [addingOperator, setAddingOperator] = useState(false);
+  const loaded = useRef(false);
 
   const loadOverview = useCallback(async () => {
     try {
       const data = await api<{ operators: Operator[]; keystones: AdminKeystone[]; itemBatches: ItemBatch[]; wallet: Wallet }>(
         "/api/admin/overview"
       );
+      loaded.current = true;
       setOperators(data.operators);
       setKeystones(data.keystones);
       setItemBatches(data.itemBatches ?? []);
@@ -89,8 +159,9 @@ export default function AdminApp() {
       });
     } catch (e: any) {
       setGateError({ status: e.status, message: e.message });
+      if (!loaded.current) onGateError?.({ status: e.status, message: e.message });
     }
-  }, [api]);
+  }, [api, onGateError]);
 
   const loadDetail = useCallback(
     async (slug: string) => {
@@ -104,8 +175,8 @@ export default function AdminApp() {
   );
 
   useEffect(() => {
-    if (ready && authenticated) loadOverview();
-  }, [ready, authenticated, loadOverview]);
+    loadOverview();
+  }, [loadOverview]);
 
   const operator = operators?.find((o) => o.id === operatorId) ?? null;
   const operatorTokens = useMemo(() => newestFirst(keystones.filter((e) => e.operatorId === operatorId)), [keystones, operatorId]);
@@ -120,11 +191,11 @@ export default function AdminApp() {
   }, [operatorId, operatorTokens]);
 
   useEffect(() => {
-    if (selected && authenticated) {
+    if (selected) {
       setDetail(null);
       loadDetail(selected);
     } else setDetail(null);
-  }, [selected, authenticated, loadDetail]);
+  }, [selected, loadDetail]);
 
   /** Children call this after any mutation so lists + counts stay fresh. */
   const onChange = useCallback(
@@ -139,65 +210,28 @@ export default function AdminApp() {
     [selected, loadDetail, loadOverview]
   );
 
-  // ── Gates ─────────────────────────────────────────────────────
-  if (!ready) return <Centered><Spinner /></Centered>;
-
-  if (!authenticated) {
-    return (
-      <Centered>
-        <div className="w-full max-w-sm text-center">
-          <Logo />
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight">Operator console</h1>
-          <p className="mt-2 text-sm text-text-secondary">Sign in with an operator phone number, email or wallet.</p>
-          <Button variant="primary" className="mt-8 h-12 w-full text-[14px]" onClick={login}>
-            Sign in
-          </Button>
-        </div>
-      </Centered>
-    );
+  if (!operators) {
+    return <Centered>{gateError ? <Notice tone="bad">{gateError.message}</Notice> : <Spinner />}</Centered>;
   }
 
-  if (gateError && !operators) {
-    const who =
-      user?.phone?.number || user?.email?.address || (user?.wallet?.address && shortAddr(user.wallet.address));
-    return (
-      <Centered>
-        <div className="w-full max-w-sm text-center">
-          <Logo />
-          <h1 className="mt-6 text-xl font-semibold">
-            {gateError.status === 403 ? "Not an operator" : "Can't open the console"}
-          </h1>
-          <p className="mt-2 text-sm text-text-secondary">
-            {gateError.status === 403 ? `${who ?? "This account"} isn't on the operator list.` : gateError.message}
-          </p>
-          <Button className="mt-8" onClick={() => logout()}>
-            Sign out
-          </Button>
-        </div>
-      </Centered>
-    );
-  }
-
-  if (!operators) return <Centered><Spinner /></Centered>;
 
   const current = operatorTokens.find((e) => e.slug === selected);
 
   // ── Console ───────────────────────────────────────────────────
   return (
-    <div className="min-h-[100dvh] bg-surface">
-      <header className="sticky top-0 z-30 border-b border-border-subtle bg-surface/85 backdrop-blur-xl">
+    <div className="min-h-[100dvh]">
+      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <Logo small />
-            <span className="text-[12px] uppercase tracking-[0.25em] text-text-secondary">Operator console</span>
+            <span className="text-sm font-semibold">Operator console</span>
+            <Separator orientation="vertical" className="!h-5" />
             <GasWalletMenu wallet={wallet} />
           </div>
-          <button
-            onClick={() => logout()}
-            className="rounded-lg px-3 py-1.5 text-[12px] text-text-secondary hover:bg-surface-raised hover:text-text-primary"
-          >
+          <UiButton variant="ghost" size="sm" onClick={onSignOut}>
+            <LogOutIcon />
             Sign out
-          </button>
+          </UiButton>
         </div>
       </header>
 
@@ -205,7 +239,7 @@ export default function AdminApp() {
         {!operator ? (
           <Notice>
             No operators yet.{" "}
-            <button onClick={() => setAddingOperator(true)} className="text-accent hover:underline">
+            <button onClick={() => setAddingOperator(true)} className="font-medium text-foreground underline underline-offset-4">
               Add one
             </button>{" "}
             to start issuing keystones.
@@ -228,7 +262,7 @@ export default function AdminApp() {
               <div>
                 <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-text-muted">{operator.name}</div>
+                    <div className="text-sm text-muted-foreground">{operator.name}</div>
                     <div className="mt-1 flex items-center gap-2">
                       <h1 className="text-2xl font-semibold tracking-tight">{current.name}</h1>
                       {current.phase && <PhaseBadge phase={current.phase} />}
@@ -237,28 +271,17 @@ export default function AdminApp() {
                       href={`/x/${current.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-[11px] text-text-muted hover:text-text-secondary"
+                      className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground"
                     >
-                      /x/{current.slug} ↗
+                      /x/{current.slug}
+                      <ExternalLinkIcon className="size-3" />
                     </a>
                   </div>
-                  <nav className="flex gap-1 overflow-x-auto rounded-xl border border-border-subtle bg-surface-raised p-1">
-                    {TABS.map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={`shrink-0 rounded-lg px-3.5 py-1.5 text-[12px] transition-colors ${
-                          tab === t ? "bg-surface-elevated text-text-primary" : "text-text-secondary hover:text-text-primary"
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </nav>
+                  <TabBar tabs={TABS} value={tab} onChange={setTab} />
                 </div>
 
                 {!detail ? (
-                  <div className="h-64 animate-pulse rounded-2xl bg-surface-raised" />
+                  <div className="h-64 animate-pulse rounded-xl bg-muted" />
                 ) : tab === "Gallery" ? (
                   <GalleryTab detail={detail} onChange={onChange} />
                 ) : tab === "Items" ? (
@@ -334,42 +357,43 @@ function NewOperator({ onClose, onCreated }: { onClose: () => void; onCreated: (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" onClick={onClose}>
-      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="w-full max-w-md space-y-4 rounded-2xl border border-border-default bg-[#111] p-6">
-        <div>
-          <h2 className="text-lg font-semibold">New operator</h2>
-          <p className="mt-1 text-[12px] text-text-secondary">A creator, community or brand that issues keystones.</p>
-        </div>
-        <Field label="Name">
-          <input
-            autoFocus
-            className={inputClass}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (!idTouched) setId(slug(e.target.value));
-            }}
-            placeholder="GOAT community"
-          />
-        </Field>
-        <Field label="ID" hint="Used internally; lowercase letters, numbers and dashes">
-          <input
-            className={`${inputClass} font-mono`}
-            value={id}
-            onChange={(e) => {
-              setIdTouched(true);
-              setId(slug(e.target.value));
-            }}
-            placeholder="goat"
-          />
-        </Field>
-        {error && <Notice tone="bad">{error}</Notice>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" busy={busy} disabled={!name || !id}>Create</Button>
-        </div>
-      </form>
-    </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <form onSubmit={submit} className="grid gap-4">
+          <DialogHeader>
+            <DialogTitle>New operator</DialogTitle>
+            <DialogDescription>A creator, community or brand that issues keystones.</DialogDescription>
+          </DialogHeader>
+          <Field label="Name">
+            <Input
+              autoFocus
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (!idTouched) setId(slug(e.target.value));
+              }}
+              placeholder="GOAT community"
+            />
+          </Field>
+          <Field label="ID" hint="Used internally; lowercase letters, numbers and dashes">
+            <Input
+              className="font-mono"
+              value={id}
+              onChange={(e) => {
+                setIdTouched(true);
+                setId(slug(e.target.value));
+              }}
+              placeholder="goat"
+            />
+          </Field>
+          {error && <Notice tone="bad">{error}</Notice>}
+          <DialogFooter>
+            <Button type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit" variant="primary" busy={busy} disabled={!name || !id}>Create</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -379,89 +403,62 @@ function NewOperator({ onClose, onCreated }: { onClose: () => void; onCreated: (
  */
 function GasWalletMenu({ wallet }: { wallet: Wallet | null }) {
   const { copy, copied } = useCopy();
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => !root.current?.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
   if (!wallet) return null;
   const failed = "error" in wallet;
   const low = !failed && wallet.mintsRemaining !== null && wallet.mintsRemaining < LOW_RUNWAY;
 
   return (
-    <div ref={root} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        className={`flex h-8 items-center gap-2 rounded-full border px-3 text-[12px] transition-colors ${
-          failed ? "border-rose/40 text-rose" : low ? "border-amber/40 text-amber" : "border-border-default text-text-secondary hover:text-text-primary"
-        }`}
-      >
-        <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${failed ? "bg-rose" : low ? "bg-amber" : "bg-accent"}`} />
-        {failed ? "Gas wallet unavailable" : (
-          <>
-            <span className="font-mono tabular-nums">{Number(wallet.balanceEth).toFixed(4)} ETH</span>
-            <span className="hidden text-text-muted sm:inline">· Gas wallet</span>
-            {low && <span className="font-medium">· Low</span>}
-          </>
-        )}
-        <span aria-hidden className={`text-text-muted transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
-      </button>
-
-      {open && (
-        <div role="dialog" aria-label="Gas wallet" className="absolute left-0 top-full z-40 mt-2 w-[320px] rounded-2xl border border-border-default bg-[#141414] p-4 shadow-2xl">
+    <Popover>
+      <PopoverTrigger asChild>
+        <UiButton variant="outline" size="sm" className={cn("rounded-full", failed && "text-destructive", low && "text-amber")}>
+          <span aria-hidden className={cn("size-1.5 rounded-full", failed ? "bg-destructive" : low ? "bg-amber" : "bg-emerald")} />
           {failed ? (
-            <Notice tone="bad">{wallet.error}</Notice>
+            "Gas wallet unavailable"
           ) : (
             <>
-              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-text-secondary">
-                Gas wallet · {wallet.chain}
-                {low && <Badge tone="warn">Low</Badge>}
-              </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums">{Number(wallet.balanceEth).toFixed(4)}</span>
-                <span className="text-[12px] text-text-secondary">ETH</span>
-              </div>
-              <p className="mt-1 text-[12px] text-text-muted">
-                Pays every member mint. ≈{" "}
-                <span className={low ? "text-amber" : "text-text-secondary"}>{wallet.mintsRemaining?.toLocaleString() ?? "—"} mints</span> left at
-                current gas.
-              </p>
-              <div className="mt-4 flex items-center gap-2">
-                <button
-                  onClick={() => copy(wallet.address)}
-                  className="flex-1 rounded-xl border border-border-default px-3 py-2 font-mono text-[12px] hover:bg-surface-elevated"
-                  title="Copy address to fund this wallet"
-                >
-                  {copied === wallet.address ? "Copied" : `Copy ${shortAddr(wallet.address)}`}
-                </button>
-                <a
-                  href={wallet.explorerUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl px-3 py-2 text-[12px] text-text-secondary hover:bg-surface-elevated hover:text-text-primary hover:no-underline"
-                >
-                  Explorer ↗
-                </a>
-              </div>
-              <p className="mt-2 text-[11px] text-text-muted">Send {wallet.chain} ETH to this address to top it up.</p>
+              <span className="font-mono tabular-nums">{Number(wallet.balanceEth).toFixed(4)} ETH</span>
+              <span className="hidden text-muted-foreground sm:inline">Gas wallet</span>
+              {low && <span className="font-medium">Low</span>}
             </>
           )}
-        </div>
-      )}
-    </div>
+          <ChevronDownIcon className="text-muted-foreground" />
+        </UiButton>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80">
+        {failed ? (
+          <Notice tone="bad">{wallet.error}</Notice>
+        ) : (
+          <div className="grid gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              Gas wallet on {wallet.chain}
+              {low && <Badge tone="warn">Low</Badge>}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-semibold tabular-nums">{Number(wallet.balanceEth).toFixed(4)}</span>
+              <span className="text-sm text-muted-foreground">ETH</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Pays every member mint: about{" "}
+              <span className={low ? "text-amber" : "text-foreground"}>{wallet.mintsRemaining?.toLocaleString() ?? "—"} mints</span> left at
+              current gas.
+            </p>
+            <div className="flex items-center gap-2">
+              <UiButton variant="outline" size="sm" className="flex-1 font-mono" onClick={() => copy(wallet.address)} title="Copy address to fund this wallet">
+                <CopyIcon />
+                {copied === wallet.address ? "Copied" : shortAddr(wallet.address)}
+              </UiButton>
+              <UiButton variant="ghost" size="sm" asChild>
+                <a href={wallet.explorerUrl} target="_blank" rel="noopener noreferrer">
+                  Explorer
+                  <ExternalLinkIcon />
+                </a>
+              </UiButton>
+            </div>
+            <p className="text-xs text-muted-foreground">Send {wallet.chain} ETH to this address to top it up.</p>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -498,69 +495,67 @@ function NewKeystone({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" onClick={onClose}>
-      <form
-        onSubmit={submit}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md space-y-4 rounded-2xl border border-border-default bg-[#111] p-6"
-      >
-        <div>
-          <h2 className="text-lg font-semibold">New keystone</h2>
-          <p className="mt-1 text-[12px] text-text-secondary">
-            Holders tap an item to claim it and unlock its gallery. For <span className="text-text-primary">{operator.name}</span>.
-          </p>
-        </div>
-        <Field label="Name">
-          <input
-            autoFocus
-            className={inputClass}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (!slugTouched) setSlug(slugify(e.target.value));
-            }}
-            placeholder="Night One"
-          />
-        </Field>
-        <Field label="URL name" hint={<>Members&apos; link: <span className="font-mono">/x/{slug || "…"}</span></>}>
-          <input
-            className={`${inputClass} font-mono`}
-            value={slug}
-            onChange={(e) => {
-              setSlugTouched(true);
-              setSlug(slugify(e.target.value));
-            }}
-            placeholder="night-one"
-          />
-        </Field>
-        {error && <Notice tone="bad">{error}</Notice>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" busy={busy} disabled={!name || !slug}>
-            Create
-          </Button>
-        </div>
-      </form>
-    </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <form onSubmit={submit} className="grid gap-4">
+          <DialogHeader>
+            <DialogTitle>New keystone</DialogTitle>
+            <DialogDescription>
+              Holders tap an item to claim it and unlock its vault. For <span className="text-foreground">{operator.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <Field label="Name">
+            <Input
+              autoFocus
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (!slugTouched) setSlug(slugify(e.target.value));
+              }}
+              placeholder="Night One"
+            />
+          </Field>
+          <Field label="URL name" hint={<>Members&apos; link: <span className="font-mono">/x/{slug || "…"}</span></>}>
+            <Input
+              className="font-mono"
+              value={slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlug(slugify(e.target.value));
+              }}
+              placeholder="night-one"
+            />
+          </Field>
+          {error && <Notice tone="bad">{error}</Notice>}
+          <DialogFooter>
+            <Button type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" busy={busy} disabled={!name || !slug}>
+              Create
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-[100dvh] items-center justify-center bg-surface px-5">{children}</div>;
+  return <ConsoleRoot className="flex items-center justify-center px-5">{children}</ConsoleRoot>;
 }
 
 function Spinner() {
-  return <span className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />;
+  return <Loader2Icon className="size-6 animate-spin text-muted-foreground" />;
 }
 
 function Logo({ small = false }: { small?: boolean }) {
   return (
     <div
-      className={`mx-auto flex items-center justify-center rounded-xl bg-accent font-bold text-surface ${
-        small ? "h-7 w-7 text-[12px]" : "h-12 w-12 text-lg"
-      }`}
+      className={cn(
+        "mx-auto flex items-center justify-center rounded-md bg-primary font-semibold text-primary-foreground",
+        small ? "size-7 text-xs" : "size-12 text-lg"
+      )}
     >
       M
     </div>

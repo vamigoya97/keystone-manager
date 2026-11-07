@@ -209,8 +209,8 @@ export default function ArrangeGrid({
           commit({ kind: "row", before });
           end();
         }}
-        className={`flex items-center justify-center rounded-md border border-dashed text-[11px] font-medium ${
-          active ? "h-10 border-accent bg-accent-dim text-accent" : "h-4 border-border-default text-transparent"
+        className={`flex items-center justify-center rounded-md border border-dashed text-xs font-medium ${
+          active ? "h-10 border-ring bg-secondary text-foreground" : "h-4 border-input text-transparent"
         }`}
       >
         Full width here
@@ -258,21 +258,21 @@ export default function ArrangeGrid({
           end();
         }}
         onDragEnd={end}
-        className={`group relative min-w-0 cursor-grab overflow-hidden bg-surface-raised active:cursor-grabbing ${dragKey === key ? "opacity-40" : ""}`}
+        className={`group relative min-w-0 cursor-grab overflow-hidden bg-card active:cursor-grabbing ${dragKey === key ? "opacity-40" : ""}`}
         style={sizing ?? { aspectRatio: plateAspect(item) }}
       >
         {/* Where the dragged item will land. */}
         {drop?.kind === "side" && drop.key === key && (
-          <span aria-hidden className={`absolute inset-y-0 z-20 w-1 bg-accent ${drop.after ? "right-0" : "left-0"}`} />
+          <span aria-hidden className={`absolute inset-y-0 z-20 w-1 bg-primary ${drop.after ? "right-0" : "left-0"}`} />
         )}
         {drop?.kind === "row" && item.wide && (drop.before === key || drop.before === nextRowKey) && (
-          <span aria-hidden className={`absolute inset-x-0 z-20 h-1 bg-accent ${drop.before === key ? "top-0" : "bottom-0"}`} />
+          <span aria-hidden className={`absolute inset-x-0 z-20 h-1 bg-primary ${drop.before === key ? "top-0" : "bottom-0"}`} />
         )}
         <PlateTile item={item} />
-        <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-white/80 group-hover:opacity-0">
+        <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white/80 group-hover:opacity-0">
           {KIND_LABEL[kind]}
           {item.duration ? ` · ${formatDuration(item.duration)}` : ""}
-          {item.wide ? " · Full width" : ""}
+          {item.wide ? "· Full width" : ""}
         </span>
         {controls && !dragKey && (
           <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 bg-black/55 p-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">

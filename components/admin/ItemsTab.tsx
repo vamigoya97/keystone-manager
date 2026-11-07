@@ -4,7 +4,9 @@ import { useState } from "react";
 import type { ChipSecurity, ItemBatch, Keystone, Operator } from "@/lib/keystones";
 import type { Detail } from "./AdminApp";
 import ItemsPanel from "./ItemsPanel";
-import { Badge, Button, Field, Notice, Panel, inputClass, useAdminApi, useCopy } from "./ui";
+import { cn } from "@/lib/utils";
+import { Badge, Button, Field, Notice, Panel, useAdminApi, useCopy } from "./ui";
+import { Input } from "@/components/ui/input";
 
 /**
  * The physical items that open this keystone: the chip type, links or NTAG 424
@@ -87,22 +89,22 @@ function ChipLinks({ slug }: { slug: string }) {
 
   return (
     <Panel title="Chip links">
-      <p className="mb-4 text-[13px] text-text-secondary">
+      <p className="mb-4 text-sm text-muted-foreground">
         Generate the signed URL to write onto each item&apos;s NFC chip. Each chip can be claimed
         by one wallet.
       </p>
       <div className="grid gap-3 sm:grid-cols-[1fr_100px_100px_2fr_auto] sm:items-end">
         <Field label="ID prefix">
-          <input className={`${inputClass} font-mono`} value={prefix} onChange={(e) => setPrefix(e.target.value)} />
+          <Input className="font-mono" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
         </Field>
         <Field label="Start #">
-          <input type="number" min={0} className={inputClass} value={start} onChange={(e) => setStart(+e.target.value)} />
+          <Input type="number" min={0}  value={start} onChange={(e) => setStart(+e.target.value)} />
         </Field>
         <Field label="Count">
-          <input type="number" min={1} max={1000} className={inputClass} value={count} onChange={(e) => setCount(+e.target.value)} />
+          <Input type="number" min={1} max={1000}  value={count} onChange={(e) => setCount(+e.target.value)} />
         </Field>
         <Field label="Public site URL">
-          <input className={`${inputClass} font-mono`} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://yourdomain.com" />
+          <Input className="font-mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://yourdomain.com" />
         </Field>
         <Button variant="primary" busy={busy} onClick={generate}>
           Generate
@@ -114,7 +116,7 @@ function ChipLinks({ slug }: { slug: string }) {
       {chips.length > 0 && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[12px] text-text-secondary">{chips.length} links</span>
+            <span className="text-sm text-muted-foreground">{chips.length} links</span>
             <div className="flex gap-2">
               <Button className="h-8" onClick={() => copy(chips.map((c) => c.url).join("\n"))}>
                 {copied?.includes("\n") || (chips.length === 1 && copied) ? "Copied" : "Copy all"}
@@ -124,15 +126,15 @@ function ChipLinks({ slug }: { slug: string }) {
               </Button>
             </div>
           </div>
-          <div className="max-h-64 overflow-y-auto rounded-xl border border-border-subtle bg-surface">
+          <div className="max-h-64 overflow-y-auto rounded-xl border bg-background">
             {chips.map((c) => (
               <button
                 key={c.chipId}
                 onClick={() => copy(c.url)}
-                className="flex w-full items-center gap-3 border-b border-border-subtle px-3 py-2 text-left last:border-0 hover:bg-surface-raised"
+                className="flex w-full items-center gap-3 border-b px-3 py-2 text-left last:border-0 hover:bg-card"
               >
-                <span className="w-24 shrink-0 font-mono text-[12px] text-accent">{c.chipId}</span>
-                <span className="truncate font-mono text-[11px] text-text-secondary">
+                <span className="w-24 shrink-0 font-mono text-sm text-foreground">{c.chipId}</span>
+                <span className="truncate font-mono text-xs text-muted-foreground">
                   {copied === c.url ? "Copied" : c.url}
                 </span>
               </button>
@@ -200,17 +202,13 @@ function ChipSecurityPanel({
             key={o.mode}
             onClick={() => choose(o.mode)}
             disabled={busy !== null}
-            className={`rounded-xl border p-4 text-left transition-colors ${
-              current === o.mode
-                ? "border-accent/50 bg-accent-dim"
-                : "border-border-default hover:border-border-default hover:bg-surface-elevated"
-            }`}
+            className={cn("rounded-xl border p-4 text-left transition-colors", current === o.mode ? "border-ring bg-secondary" : "hover:bg-secondary/50")}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className={`text-[13px] font-semibold ${current === o.mode ? "text-accent" : ""}`}>{o.title}</span>
+              <span className={`text-sm font-semibold ${current === o.mode ? "text-foreground" : ""}`}>{o.title}</span>
               {current === o.mode ? <Badge tone="good">Active</Badge> : busy === o.mode ? <Badge>Saving…</Badge> : null}
             </div>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-text-secondary">{o.body}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{o.body}</p>
           </button>
         ))}
       </div>
@@ -268,11 +266,11 @@ function Ntag424Sheet({ slug }: { slug: string }) {
   }
 
   const row = (label: string, value: string, mono = true) => (
-    <div className="flex items-start justify-between gap-3 border-b border-border-subtle py-2 last:border-0">
-      <span className="shrink-0 text-[12px] text-text-secondary">{label}</span>
+    <div className="flex items-start justify-between gap-3 border-b py-2 last:border-0">
+      <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
       <button
         onClick={() => copy(value)}
-        className={`min-w-0 break-all text-right text-[12px] hover:text-accent ${mono ? "font-mono" : ""}`}
+        className={`min-w-0 break-all text-right text-sm hover:text-foreground ${mono ? "font-mono" : ""}`}
         title="Copy"
       >
         {copied === value ? "Copied" : value}
@@ -282,7 +280,7 @@ function Ntag424Sheet({ slug }: { slug: string }) {
 
   return (
     <Panel title="Program NTAG 424 DNA chips">
-      <p className="mb-4 text-[13px] leading-relaxed text-text-secondary">
+      <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
         Every chip for this keystone is programmed identically: the same URL template, keys and settings.
         Send the sheet to your chip supplier, or program chips yourself with NXP TagXplorer and a USB reader.
         Each chip&apos;s UID becomes its ID in the members list.
@@ -291,7 +289,7 @@ function Ntag424Sheet({ slug }: { slug: string }) {
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[240px] flex-1">
           <Field label="Public site URL" hint="Must be https:// — this is what the chip opens">
-            <input className={`${inputClass} font-mono`} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://yourdomain.com" />
+            <Input className="font-mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://yourdomain.com" />
           </Field>
         </div>
         <Button variant="primary" busy={busy} onClick={load}>
@@ -309,19 +307,19 @@ function Ntag424Sheet({ slug }: { slug: string }) {
           </Notice>
 
           <div>
-            <div className="mb-1 text-[11px] uppercase tracking-[0.14em] text-text-muted">NDEF URL (URI record)</div>
+            <div className="mb-1 text-xs text-muted-foreground">NDEF URL (URI record)</div>
             {row("Template", sheet.urlTemplate)}
           </div>
 
           <div>
-            <div className="mb-1 text-[11px] uppercase tracking-[0.14em] text-text-muted">AES-128 keys</div>
+            <div className="mb-1 text-xs text-muted-foreground">AES-128 keys</div>
             {row("Key 0 · app master", sheet.keys.key0AppMaster)}
             {row("Key 1 · SDM meta read", sheet.keys.key1SdmMetaRead)}
             {row("Key 2 · SDM file read", sheet.keys.key2SdmFileRead)}
           </div>
 
           <div>
-            <div className="mb-1 text-[11px] uppercase tracking-[0.14em] text-text-muted">SDM file settings</div>
+            <div className="mb-1 text-xs text-muted-foreground">SDM file settings</div>
             {row("File", sheet.sdm.file, false)}
             {row("Mirroring", sheet.sdm.options, false)}
             {row("Meta read key", sheet.sdm.metaReadKey, false)}
@@ -329,7 +327,7 @@ function Ntag424Sheet({ slug }: { slug: string }) {
             {row("PICCDataOffset", `${sheet.sdm.piccDataOffset.hex} (${sheet.sdm.piccDataOffset.decimal})`)}
             {row("SDMMACInputOffset", `${sheet.sdm.macInputOffset.hex} (${sheet.sdm.macInputOffset.decimal})`)}
             {row("SDMMACOffset", `${sheet.sdm.macOffset.hex} (${sheet.sdm.macOffset.decimal})`)}
-            <p className="mt-2 text-[11px] text-text-muted">{sheet.sdm.note} Read access to the NDEF file stays free (Eh) so phones can open the link.</p>
+            <p className="mt-2 text-xs text-muted-foreground">{sheet.sdm.note} Read access to the NDEF file stays free (Eh) so phones can open the link.</p>
           </div>
 
           <div className="flex justify-end">

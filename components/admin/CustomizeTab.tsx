@@ -8,7 +8,12 @@ import { PlateClaim, type ClaimAccess, type MintPhase } from "@/components/nfc/p
 import type { Detail } from "./AdminApp";
 import MediaPicker from "./MediaPicker";
 import PhonePreview from "./PhonePreview";
-import { Button, Field, Notice, Panel, inputClass, useAdminApi } from "./ui";
+import { RotateCcwIcon } from "lucide-react";
+import { Button as UiButton } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button, Field, Notice, Panel, useAdminApi } from "./ui";
+import { Input } from "@/components/ui/input";
 
 /** The claim screen's states as the preview shows them, numbered i–iv (the name is the tooltip). */
 type PreviewState = { id: string; numeral: string; name: string; status: AccessStatus; access: ClaimAccess; phase: MintPhase };
@@ -103,7 +108,7 @@ export default function CustomizeTab({
                 fallback="#E5E5E2"
                 onChange={(v) => setClaim("backgroundColor", v)}
               />
-              <Slider label="Darken media" unit="%" value={style.dim} {...L.dim} onChange={(v) => setClaim("dim", v)} />
+              <RangeField label="Darken media" unit="%" value={style.dim} {...L.dim} onChange={(v) => setClaim("dim", v)} />
               <ColorInput
                 label="Text color"
                 hint="Vault description, attributes and the slide button; standard follows the background"
@@ -112,7 +117,7 @@ export default function CustomizeTab({
                 onChange={(v) => setClaim("text", { color: v })}
               />
             </div>
-            <p className="text-[11px] text-text-muted">Media is always darkened at least 45% so text over it stays readable.</p>
+            <p className="text-xs text-muted-foreground">Media is always darkened at least 45% so text over it stays readable.</p>
           </div>
         </Panel>
 
@@ -121,26 +126,28 @@ export default function CustomizeTab({
             <CopyInput label="While aligning" placeholder={copy.verifying} value={theme.claim?.alerts?.aligning} onChange={(v) => setClaim("alerts", { aligning: v })} />
             <CopyInput label="Not aligned" placeholder={copy.failed} value={theme.claim?.alerts?.failed} onChange={(v) => setClaim("alerts", { failed: v })} />
           </div>
-          <p className="mt-3 text-[11px] text-text-muted">
+          <p className="mt-3 text-xs text-muted-foreground">
             "While aligning" shows on the greyed-out slide button. "Not aligned" is read out and shown on the corner icon. Leave a message empty to use the standard wording shown in grey.
           </p>
         </Panel>
 
         {error && <Notice tone="bad">{error}</Notice>}
-        <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-2xl border border-border-subtle bg-surface/90 p-3 backdrop-blur-xl">
+        <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-xl border bg-background/90 p-3 shadow-sm backdrop-blur">
           {theme.claim && (
-            <button
+            <UiButton
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setSaved(false);
                 setTheme((t) => ({ ...t, claim: undefined }));
               }}
-              className="mr-auto text-[12px] text-text-muted hover:text-text-primary"
+              className="mr-auto text-muted-foreground"
             >
               Reset to standard
-            </button>
+            </UiButton>
           )}
-          {saved && !dirty && <span className="text-[12px] text-accent">Saved — live for members</span>}
-          {dirty && <span className="text-[12px] text-text-secondary">Unsaved changes</span>}
+          {saved && !dirty && <span className="text-sm text-emerald">Saved, live for members</span>}
+          {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
           <Button disabled={!dirty || saving} onClick={() => setTheme(keystone.theme ?? {})}>Discard</Button>
           <Button variant="primary" busy={saving} disabled={!dirty} onClick={save}>Save customization</Button>
         </div>
@@ -149,8 +156,11 @@ export default function CustomizeTab({
       {/* ── Live preview ── */}
       <div className="lg:sticky lg:top-20 lg:self-start">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-text-secondary">Claim screen preview</span>
-          <button onClick={() => setReplay((r) => r + 1)} className="text-[12px] text-text-secondary hover:text-text-primary">↻ Replay</button>
+          <span className="text-sm font-medium">Claim screen preview</span>
+          <UiButton variant="ghost" size="sm" onClick={() => setReplay((r) => r + 1)}>
+            <RotateCcwIcon />
+            Replay
+          </UiButton>
         </div>
 
         <PhonePreview>
@@ -171,21 +181,26 @@ export default function CustomizeTab({
           </div>
         </PhonePreview>
 
-        <div className="mt-3 flex justify-center gap-1">
-          {PREVIEW_STATES.map((p) => (
-            <StateChip
-              key={p.id}
-              active={previewId === p.id}
-              title={p.name}
-              onClick={() => {
-                setPreviewId(p.id);
-                setPlaying(false);
-                setReplay((r) => r + 1);
-              }}
-            >
-              {p.numeral}
-            </StateChip>
-          ))}
+        <div className="mt-3 flex justify-center">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={previewId}
+            onValueChange={(v) => {
+              if (!v) return;
+              setPreviewId(v);
+              setPlaying(false);
+              setReplay((r) => r + 1);
+            }}
+            aria-label="Claim screen state"
+          >
+            {PREVIEW_STATES.map((p) => (
+              <ToggleGroupItem key={p.id} value={p.id} title={p.name} aria-label={`${p.numeral}: ${p.name}`} className="min-w-10 font-mono">
+                {p.numeral}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
       </div>
     </div>
@@ -194,11 +209,18 @@ export default function CustomizeTab({
 
 // ── Form pieces ─────────────────────────────────────────────────
 
-function Slider({ label, value, min, max, unit = "", onChange }: { label: string; value: number; min: number; max: number; unit?: string; onChange: (v: number) => void }) {
+function RangeField({ label, value, min, max, unit = "", onChange }: { label: string; value: number; min: number; max: number; unit?: string; onChange: (v: number) => void }) {
   return (
-    <Field label={`${label} · ${value}${unit}`}>
-      <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(+e.target.value)} className="h-9 w-full accent-[#C8FF2E]" />
-    </Field>
+    <div className="grid gap-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="leading-none font-medium">{label}</span>
+        <span className="tabular-nums text-muted-foreground">
+          {value}
+          {unit}
+        </span>
+      </div>
+      <Slider className="py-3" min={min} max={max} value={[value]} onValueChange={([v]) => onChange(v)} aria-label={label} />
+    </div>
   );
 }
 
@@ -222,13 +244,13 @@ function ColorInput({
           type="color"
           value={value ?? fallback}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
-          className="h-9 w-12 cursor-pointer rounded-lg border border-border-default bg-transparent p-1"
+          className="h-9 w-12 cursor-pointer rounded-md border border-input bg-transparent p-1 shadow-xs dark:bg-input/30"
         />
-        <span className="font-mono text-[12px] text-text-secondary">{value ?? "Standard"}</span>
+        <span className="font-mono text-sm text-muted-foreground">{value ?? "Standard"}</span>
         {value && (
-          <button type="button" onClick={() => onChange(undefined)} className="text-[11px] text-text-muted hover:text-text-primary">
+          <UiButton type="button" variant="ghost" size="sm" onClick={() => onChange(undefined)}>
             Reset
-          </button>
+          </UiButton>
         )}
       </span>
     </Field>
@@ -238,27 +260,12 @@ function ColorInput({
 function CopyInput({ label, placeholder, value, onChange }: { label: string; placeholder: string; value?: string; onChange: (v: string | undefined) => void }) {
   return (
     <Field label={label}>
-      <input
-        className={inputClass}
+      <Input
         placeholder={placeholder}
         value={value ?? ""}
         maxLength={CLAIM_LIMITS.alertChars}
         onChange={(e) => onChange(e.target.value || undefined)}
       />
     </Field>
-  );
-}
-
-function StateChip({ active, title, onClick, children }: { active: boolean; title: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      aria-label={`${children} · ${title}`}
-      aria-pressed={active}
-      className={`min-w-[36px] rounded-full px-3 py-1 font-mono text-[11px] ${active ? "bg-accent-dim text-accent" : "text-text-muted hover:text-text-secondary"}`}
-    >
-      {children}
-    </button>
   );
 }

@@ -3,7 +3,11 @@
 import { useMemo, useState } from "react";
 import type { Member } from "@/lib/keystones";
 import type { Detail } from "./AdminApp";
-import { Badge, Button, Notice, Panel, inputClass, shortAddr, useAdminApi, useCopy } from "./ui";
+import { ExternalLinkIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge, Button, Notice, Panel, shortAddr, useAdminApi, useCopy } from "./ui";
+import { Input } from "@/components/ui/input";
 
 export default function MembersTab({
   detail,
@@ -67,8 +71,8 @@ export default function MembersTab({
       <Panel
         title="Members"
         action={
-          <input
-            className={`${inputClass} h-9 w-48 py-0 sm:w-64`}
+          <Input
+            className="w-48 sm:w-64"
             placeholder="Search wallet or chip"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -76,67 +80,64 @@ export default function MembersTab({
         }
       >
         {rows.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-text-muted">
+          <p className="py-8 text-center text-sm text-muted-foreground">
             {members.length === 0 ? "No one has claimed yet. Members appear here after their first tap and claim." : "No matches."}
           </p>
         ) : (
-          <div className="-mx-5 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-[13px]">
-              <thead>
-                <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-text-muted">
-                  <th className="px-5 py-2 font-medium">Wallet</th>
-                  <th className="px-3 py-2 font-medium">Chip</th>
-                  <th className="px-3 py-2 font-medium">Claimed</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-5 py-2 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((m) => (
-                  <tr key={m.address} className="border-b border-border-subtle last:border-0">
-                    <td className="px-5 py-3">
-                      <button onClick={() => copy(m.address)} className="font-mono hover:text-accent" title={m.address}>
-                        {copied === m.address ? "Copied" : shortAddr(m.address)}
-                      </button>
-                    </td>
-                    <td className="px-3 py-3 font-mono text-text-secondary">{m.chipId}</td>
-                    <td className="px-3 py-3 text-text-secondary">
-                      {new Date(m.claimedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                      {m.txHash && explorer && (
-                        <a
-                          href={`${explorer}/tx/${m.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-[11px] text-text-muted hover:text-text-secondary"
-                        >
-                          tx ↗
-                        </a>
-                      )}
-                    </td>
-                    <td className="px-3 py-3">
-                      {m.revoked ? <Badge tone="bad">Revoked</Badge> : <Badge tone="good">Active</Badge>}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex justify-end gap-2">
-                        {m.revoked ? (
-                          <Button className="h-8" busy={busy === m.address + "restore"} onClick={() => act(m, "restore")}>
-                            Restore
-                          </Button>
-                        ) : (
-                          <Button variant="danger" className="h-8" busy={busy === m.address + "revoke"} onClick={() => act(m, "revoke")}>
-                            Revoke
-                          </Button>
-                        )}
-                        <Button className="h-8" busy={busy === m.address + "release"} onClick={() => act(m, "release")}>
-                          Release chip
+          <Table className="min-w-[640px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Wallet</TableHead>
+                <TableHead>Chip</TableHead>
+                <TableHead>Claimed</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((m) => (
+                <TableRow key={m.address}>
+                  <TableCell>
+                    <button onClick={() => copy(m.address)} className="font-mono hover:underline" title={m.address}>
+                      {copied === m.address ? "Copied" : shortAddr(m.address)}
+                    </button>
+                  </TableCell>
+                  <TableCell className="font-mono text-muted-foreground">{m.chipId}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(m.claimedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                    {m.txHash && explorer && (
+                      <a
+                        href={`${explorer}/tx/${m.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 inline-flex items-center gap-0.5 text-xs hover:text-foreground"
+                      >
+                        tx
+                        <ExternalLinkIcon className="size-3" />
+                      </a>
+                    )}
+                  </TableCell>
+                  <TableCell>{m.revoked ? <Badge tone="bad">Revoked</Badge> : <Badge tone="good">Active</Badge>}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2">
+                      {m.revoked ? (
+                        <Button busy={busy === m.address + "restore"} onClick={() => act(m, "restore")}>
+                          Restore
                         </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      ) : (
+                        <Button variant="danger" busy={busy === m.address + "revoke"} onClick={() => act(m, "revoke")}>
+                          Revoke
+                        </Button>
+                      )}
+                      <Button busy={busy === m.address + "release"} onClick={() => act(m, "release")}>
+                        Release chip
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </Panel>
 
@@ -146,9 +147,9 @@ export default function MembersTab({
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-border-subtle bg-surface-raised p-4">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value.toLocaleString()}</div>
-    </div>
+    <Card className="gap-1 px-6 py-5">
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="text-2xl font-semibold tabular-nums">{value.toLocaleString()}</div>
+    </Card>
   );
 }

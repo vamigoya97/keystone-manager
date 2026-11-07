@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { formatDates, type ChipSecurity, type Keystone, type ItemBatch, type Operator } from "@/lib/keystones";
-import { Badge, Button, Field, Notice, Panel, inputClass, useAdminApi, useCopy } from "./ui";
+import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, PlusIcon, XIcon } from "lucide-react";
+import { Button as UiButton } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Badge, Button, Field, Notice, Panel, useAdminApi, useCopy } from "./ui";
+import { Input } from "@/components/ui/input";
 
 /**
  * Item batches that unlock this keystone. A batch of items unlocks several of
@@ -29,18 +33,19 @@ export default function ItemsPanel({
     <Panel
       title={
         <span>
-          Multi-keystone items <span className="font-normal text-text-muted">· {batches.length}</span>
+          Multi-keystone items <span className="font-normal text-muted-foreground">· {batches.length}</span>
         </span>
       }
       action={
         editing === null && (
           <Button className="h-8" disabled={tokens.length === 0} onClick={() => setEditing("new")}>
-            + New item batch
+            <PlusIcon />
+            New item batch
           </Button>
         )
       }
     >
-      <p className="-mt-2 mb-3 text-[12px] text-text-muted">
+      <p className="-mt-2 mb-3 text-sm text-muted-foreground">
         Wristbands, pins or tickets whose chip unlocks {keystone.name} together with other {operator.name} keystones in
         one tap. Add keystones later and items already handed out unlock them too.
       </p>
@@ -58,7 +63,7 @@ export default function ItemsPanel({
           onCancel={() => setEditing(null)}
         />
       ) : batches.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border-default px-4 py-6 text-center text-[13px] text-text-muted">
+        <p className="rounded-xl border border-dashed border-input px-4 py-6 text-center text-sm text-muted-foreground">
           No multi-keystone items include {keystone.name} yet.
         </p>
       ) : (
@@ -67,23 +72,23 @@ export default function ItemsPanel({
             <button
               key={b.id}
               onClick={() => setEditing(b)}
-              className="flex w-full items-center gap-3 rounded-xl border border-border-subtle px-3 py-2.5 text-left hover:border-border-default hover:bg-surface-elevated"
+              className="flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left hover:border-input hover:bg-secondary"
             >
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
-                  <span className="truncate text-[13px] font-medium">{b.name}</span>
+                  <span className="truncate text-sm font-medium">{b.name}</span>
                   <Badge>{b.chipSecurity === "ntag424" ? "NTAG 424" : "Static"}</Badge>
                 </span>
                 <span className="mt-1 flex flex-wrap gap-1">
                   {b.tokens.map((slug, i) => (
-                    <span key={slug} className="rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] text-text-secondary">
+                    <span key={slug} className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                       {i === 0 && "★ "}
                       {bySlug.get(slug)?.name ?? slug}
                     </span>
                   ))}
                 </span>
               </span>
-              <span className="shrink-0 text-[12px] text-text-secondary">Edit →</span>
+              <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">Edit<ChevronRightIcon className="size-4" /></span>
             </button>
           ))}
         </div>
@@ -152,9 +157,9 @@ function BatchEditor({
       <form onSubmit={save} className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
           <Field label="Batch name">
-            <input
+            <Input
               autoFocus
-              className={inputClass}
+
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -164,8 +169,8 @@ function BatchEditor({
             />
           </Field>
           <Field label="ID" hint={<>Links open <span className="font-mono">/t/{id || "…"}</span></>}>
-            <input
-              className={`${inputClass} font-mono`}
+            <Input
+              className="font-mono"
               value={id}
               disabled={!!batch}
               onChange={(e) => {
@@ -180,13 +185,19 @@ function BatchEditor({
         <Field label="Unlocks" hint={`Only ${operator.name}'s keystones. ★ The first is where a tap lands; the rest are listed in its gallery.`}>
           <div className="space-y-1.5">
             {selected.map((slug, i) => (
-              <div key={slug} className="flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-dim px-3 py-2">
-                <span className="w-4 text-[12px] text-accent">{i === 0 ? "★" : i + 1}</span>
-                <span className="min-w-0 flex-1 truncate text-[13px]">{bySlug.get(slug)?.name ?? slug}</span>
+              <div key={slug} className="flex items-center gap-2 rounded-lg border bg-secondary/50 px-3 py-1.5">
+                <span className="w-4 text-sm text-foreground">{i === 0 ? "★" : i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-sm">{bySlug.get(slug)?.name ?? slug}</span>
                 {bySlug.get(slug) && formatDates(bySlug.get(slug)!) && <Badge>{formatDates(bySlug.get(slug)!)}</Badge>}
-                <button type="button" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)} className="px-1 text-text-secondary disabled:opacity-30">↑</button>
-                <button type="button" aria-label="Move down" disabled={i === selected.length - 1} onClick={() => move(i, 1)} className="px-1 text-text-secondary disabled:opacity-30">↓</button>
-                <button type="button" aria-label="Remove" onClick={() => toggle(slug)} className="px-1 text-text-muted hover:text-rose">✕</button>
+                <UiButton type="button" variant="ghost" size="icon" className="size-7" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
+                  <ChevronUpIcon />
+                </UiButton>
+                <UiButton type="button" variant="ghost" size="icon" className="size-7" aria-label="Move down" disabled={i === selected.length - 1} onClick={() => move(i, 1)}>
+                  <ChevronDownIcon />
+                </UiButton>
+                <UiButton type="button" variant="ghost" size="icon" className="size-7 hover:text-destructive" aria-label="Remove" onClick={() => toggle(slug)}>
+                  <XIcon />
+                </UiButton>
               </div>
             ))}
             {tokens
@@ -196,9 +207,9 @@ function BatchEditor({
                   key={t.slug}
                   type="button"
                   onClick={() => toggle(t.slug)}
-                  className="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-default px-3 py-2 text-left text-[13px] text-text-secondary hover:border-accent/40 hover:text-text-primary"
+                  className="flex w-full items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-left text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                 >
-                  <span className="w-4">+</span>
+                  <PlusIcon className="size-4" />
                   <span className="min-w-0 flex-1 truncate">{t.name}</span>
                   {formatDates(t) && <Badge>{formatDates(t)}</Badge>}
                 </button>
@@ -207,19 +218,14 @@ function BatchEditor({
         </Field>
 
         <Field label="Chip type">
-          <div className="flex gap-1 rounded-xl border border-border-default p-1">
-            {(["static", "ntag424"] as ChipSecurity[]).map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-pressed={chip === c}
-                onClick={() => setChip(c)}
-                className={`flex-1 rounded-lg px-3 py-1.5 text-[12px] ${chip === c ? "bg-accent-dim text-accent" : "text-text-secondary hover:text-text-primary"}`}
-              >
-                {c === "static" ? "Static links (NTAG 213/215)" : "Secure · NTAG 424 DNA"}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup type="single" variant="outline" value={chip} onValueChange={(v) => v && setChip(v as ChipSecurity)} className="w-full">
+            <ToggleGroupItem value="static" className="flex-1">
+              Static links (NTAG 213/215)
+            </ToggleGroupItem>
+            <ToggleGroupItem value="ntag424" className="flex-1">
+              Secure: NTAG 424 DNA
+            </ToggleGroupItem>
+          </ToggleGroup>
         </Field>
 
         {error && <Notice tone="bad">{error}</Notice>}
@@ -270,30 +276,30 @@ function ItemLinks({ batchId }: { batchId: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface p-4">
-      <div className="mb-3 text-[11px] uppercase tracking-[0.14em] text-text-secondary">Item links</div>
+    <div className="rounded-xl border bg-background p-4">
+      <div className="mb-3 text-xs text-muted-foreground">Item links</div>
       <div className="grid gap-3 sm:grid-cols-[1fr_90px_90px_2fr_auto] sm:items-end">
-        <Field label="ID prefix"><input className={`${inputClass} font-mono`} value={prefix} onChange={(e) => setPrefix(e.target.value)} /></Field>
-        <Field label="Start #"><input type="number" min={0} className={inputClass} value={start} onChange={(e) => setStart(+e.target.value)} /></Field>
-        <Field label="Count"><input type="number" min={1} max={1000} className={inputClass} value={count} onChange={(e) => setCount(+e.target.value)} /></Field>
-        <Field label="Public site URL"><input className={`${inputClass} font-mono`} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} /></Field>
+        <Field label="ID prefix"><Input className="font-mono" value={prefix} onChange={(e) => setPrefix(e.target.value)} /></Field>
+        <Field label="Start #"><Input type="number" min={0}  value={start} onChange={(e) => setStart(+e.target.value)} /></Field>
+        <Field label="Count"><Input type="number" min={1} max={1000}  value={count} onChange={(e) => setCount(+e.target.value)} /></Field>
+        <Field label="Public site URL"><Input className="font-mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} /></Field>
         <Button variant="primary" busy={busy} onClick={generate}>Generate</Button>
       </div>
       {error && <div className="mt-3"><Notice tone="bad">{error}</Notice></div>}
       {items.length > 0 && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[12px] text-text-secondary">{items.length} item links</span>
+            <span className="text-sm text-muted-foreground">{items.length} item links</span>
             <div className="flex gap-2">
               <Button className="h-8" onClick={() => copy(items.map((i) => i.url).join("\n"))}>Copy all</Button>
               <Button className="h-8" onClick={downloadCsv}>Download CSV</Button>
             </div>
           </div>
-          <div className="max-h-56 overflow-y-auto rounded-xl border border-border-subtle">
+          <div className="max-h-56 overflow-y-auto rounded-xl border">
             {items.map((i) => (
-              <button key={i.chipId} onClick={() => copy(i.url)} className="flex w-full items-center gap-3 border-b border-border-subtle px-3 py-2 text-left last:border-0 hover:bg-surface-raised">
-                <span className="w-24 shrink-0 font-mono text-[12px] text-accent">{i.chipId}</span>
-                <span className="truncate font-mono text-[11px] text-text-secondary">{copied === i.url ? "Copied" : i.url}</span>
+              <button key={i.chipId} onClick={() => copy(i.url)} className="flex w-full items-center gap-3 border-b px-3 py-2 text-left last:border-0 hover:bg-card">
+                <span className="w-24 shrink-0 font-mono text-sm text-foreground">{i.chipId}</span>
+                <span className="truncate font-mono text-xs text-muted-foreground">{copied === i.url ? "Copied" : i.url}</span>
               </button>
             ))}
           </div>
@@ -336,21 +342,21 @@ function ItemNtagSheet({ batchId }: { batchId: string }) {
   }
 
   const row = (label: string, value: string) => (
-    <div className="flex items-start justify-between gap-3 border-b border-border-subtle py-2 last:border-0">
-      <span className="shrink-0 text-[12px] text-text-secondary">{label}</span>
-      <button onClick={() => copy(value)} className="min-w-0 break-all text-right font-mono text-[12px] hover:text-accent">
+    <div className="flex items-start justify-between gap-3 border-b py-2 last:border-0">
+      <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
+      <button onClick={() => copy(value)} className="min-w-0 break-all text-right font-mono text-sm hover:text-foreground">
         {copied === value ? "Copied" : value}
       </button>
     </div>
   );
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface p-4">
-      <div className="mb-3 text-[11px] uppercase tracking-[0.14em] text-text-secondary">Program NTAG 424 DNA items</div>
+    <div className="rounded-xl border bg-background p-4">
+      <div className="mb-3 text-xs text-muted-foreground">Program NTAG 424 DNA items</div>
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[220px] flex-1">
           <Field label="Public site URL" hint="Must be https://">
-            <input className={`${inputClass} font-mono`} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+            <Input className="font-mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
           </Field>
         </div>
         <Button variant="primary" busy={busy} onClick={load}>{sheet ? "Refresh sheet" : "Show programming sheet"}</Button>

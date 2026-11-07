@@ -10,6 +10,8 @@ import { useAuthedFetch } from "@/lib/useAccess";
 import TokenCard from "@/components/nfc/TokenCard";
 import type { Detail } from "./AdminApp";
 import { uploadImages } from "./GalleryTab";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ExternalLinkIcon } from "lucide-react";
 import { Badge, Button, Notice, Panel, shortAddr, useAdminApi, useCopy } from "./ui";
 
 type Estimate = { gas: string; costEth: string; affordable: boolean };
@@ -131,7 +133,7 @@ export function ArtworkPanel({
           <Notice tone="bad">{error}</Notice>
         </div>
       )}
-      <p className="mt-2 text-[11px] text-text-muted">
+      <p className="mt-2 text-xs text-muted-foreground">
         An image, or a looping MP4/WebM up to {VIDEO_MAX_SECONDS} s. Pinned publicly to IPFS; its content address
         (ipfs://…) is what gets committed on chain. A video is committed as animation_url, with its first frame as the image.
       </p>
@@ -142,7 +144,7 @@ export function ArtworkPanel({
 /** Where to look the contract up: BaseScan (contract, token tracker, deployment, first keystone) and, on Base mainnet, OpenSea. */
 function ContractLinks({ address, deployTx, minted }: { address: string; deployTx?: string; minted: number }) {
   const l = contractLinks(address);
-  const link = "inline-flex items-center gap-1 rounded-lg border border-border-subtle px-2.5 py-1.5 text-text-secondary hover:border-border-default hover:text-text-primary hover:no-underline";
+  const link = "inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-muted-foreground shadow-xs hover:bg-secondary hover:text-foreground hover:no-underline dark:bg-input/30";
   const scan: [string, string][] = [
     ["Contract", l.scanContract],
     ["Token tracker", l.scanToken],
@@ -154,26 +156,27 @@ function ContractLinks({ address, deployTx, minted }: { address: string; deployT
     : [];
   const row = (name: string, links: [string, string][]) => (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-36 shrink-0 text-[11px] uppercase tracking-[0.14em] text-text-muted">{name}</span>
+      <span className="w-36 shrink-0 text-xs text-muted-foreground">{name}</span>
       {links.map(([label, href]) => (
         <a key={label} href={href} target="_blank" rel="noopener noreferrer" className={link}>
-          {label} ↗
+          {label}
+          <ExternalLinkIcon className="size-3" />
         </a>
       ))}
     </div>
   );
   return (
-    <div className="mt-4 space-y-2 border-t border-border-subtle pt-4 text-[12px]">
+    <div className="mt-4 space-y-2 border-t pt-4 text-sm">
       {row(l.scanName, scan)}
       {l.opensea ? (
         <>
           {row("OpenSea", opensea)}
-          {minted === 0 && <p className="text-[11px] text-text-muted">OpenSea lists the collection once the first keystone is forged.</p>}
+          {minted === 0 && <p className="text-xs text-muted-foreground">OpenSea lists the collection once the first keystone is forged.</p>}
         </>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-36 shrink-0 text-[11px] uppercase tracking-[0.14em] text-text-muted">OpenSea</span>
-          <span className="text-[11px] text-text-muted">
+          <span className="w-36 shrink-0 text-xs text-muted-foreground">OpenSea</span>
+          <span className="text-xs text-muted-foreground">
             OpenSea doesn&apos;t list testnets. The link appears here when keystones are deployed on Base mainnet.
           </span>
         </div>
@@ -212,8 +215,9 @@ export default function ContractSection({
       {lastTx && (
         <Notice>
           Transaction confirmed.{" "}
-          <a href={lastTx.explorerUrl} target="_blank" rel="noopener noreferrer" className="text-accent">
-            View on explorer ↗
+          <a href={lastTx.explorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4">
+            View on explorer
+            <ExternalLinkIcon className="size-3" />
           </a>
         </Notice>
       )}
@@ -228,9 +232,9 @@ export default function ContractSection({
             </div>
           }
         >
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
             <Stat label="Address">
-              <button onClick={() => copy(token.address!)} className="font-mono hover:text-accent">
+              <button onClick={() => copy(token.address!)} className="font-mono hover:text-foreground">
                 {copied === token.address ? "Copied" : shortAddr(token.address)}
               </button>
             </Stat>
@@ -251,7 +255,7 @@ export default function ContractSection({
               onDone={done}
             />
           )}
-          {!tokenStats && <p className="mt-4 text-[12px] text-text-muted">Couldn&apos;t reach the network to read the contract.</p>}
+          {!tokenStats && <p className="mt-4 text-sm text-muted-foreground">Couldn&apos;t reach the network to read the contract.</p>}
           <ContractLinks address={token.address} deployTx={token.deployTx} minted={Number(tokenStats?.totalSupply ?? 0)} />
         </Panel>
       )}
@@ -349,10 +353,10 @@ function CreatePass({
       title={replacing ? "Deploy a new keystone contract" : "Create keystone contract"}
       action={!open && <Button onClick={() => setOpen(true)}>{replacing ? "New contract" : "Create"}</Button>}
     >
-      <p className="text-[13px] leading-relaxed text-text-secondary">
-        Deploys a <span className="text-text-primary">KeystonePass</span> (ERC-721) owned by the operator
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        Deploys a <span className="text-foreground">KeystonePass</span> (ERC-721) owned by the operator
         wallet: members claim for free and only the operator can mint. The saved details and artwork are{" "}
-        <span className="text-text-primary">stored in the contract itself</span>, so wallets and marketplaces read
+        <span className="text-foreground">stored in the contract itself</span>, so wallets and marketplaces read
         the keystone straight from the chain. To change the text, edit Details above.
       </p>
 
@@ -365,32 +369,22 @@ function CreatePass({
           )}
           {unsaved && <Notice tone="warn">Details has unsaved changes. Save them first; the contract uses the saved details.</Notice>}
 
-          <label className="flex cursor-pointer items-start gap-2.5 text-[13px] text-text-secondary">
-            <input
-              type="checkbox"
-              checked={!f.transferable}
-              onChange={(e) => set("transferable", !e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[#C8FF2E]"
-            />
-            <span>
-              Non-transferable keystones
-              <span className="block text-[11px] text-text-muted">
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <Checkbox className="mt-0.5" checked={!f.transferable} onCheckedChange={(c) => set("transferable", c !== true)} />
+            <span className="grid gap-1">
+              <span className="leading-none font-medium">Non-transferable keystones</span>
+              <span className="text-muted-foreground">
                 On by default: keystones stay in the wallet they&apos;re minted to — no selling, gifting or moving.
                 Enforced by the contract. Untick to allow transfers; you can change this later unless you lock it.
               </span>
             </span>
           </label>
 
-          <label className="flex cursor-pointer items-start gap-2.5 text-[13px] text-text-secondary">
-            <input
-              type="checkbox"
-              checked={f.freeze}
-              onChange={(e) => set("freeze", e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[#C8FF2E]"
-            />
-            <span>
-              Lock metadata at deploy
-              <span className="block text-[11px] text-text-muted">
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <Checkbox className="mt-0.5" checked={f.freeze} onCheckedChange={(c) => set("freeze", c === true)} />
+            <span className="grid gap-1">
+              <span className="leading-none font-medium">Lock metadata at deploy</span>
+              <span className="text-muted-foreground">
                 Name, artwork and text can never be changed. Leave off to edit later (you can still lock it any time).
               </span>
             </span>
@@ -398,13 +392,13 @@ function CreatePass({
 
           {error && <Notice tone="bad">{error}</Notice>}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-4">
-            <span className="text-[12px] text-text-secondary">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+            <span className="text-sm text-muted-foreground">
               {estimating ? (
                 "Estimating cost…"
               ) : estimate ? (
                 <>
-                  ≈ <span className="text-text-primary">{Number(estimate.costEth).toFixed(6)} ETH</span> paid by the
+                  ≈ <span className="text-foreground">{Number(estimate.costEth).toFixed(6)} ETH</span> paid by the
                   operator wallet ({Number(estimate.gas).toLocaleString()} gas)
                   {!estimate.affordable && <span className="text-amber"> · wallet balance too low</span>}
                 </>
@@ -432,17 +426,17 @@ function CreatePass({
 function TokenUriPreview({ title, json }: { title: string; json: Record<string, unknown> }) {
   const image = typeof json.image === "string" ? json.image : "";
   return (
-    <div className="overflow-hidden rounded-xl border border-border-default bg-surface">
-      <div className="flex items-center gap-3 border-b border-border-subtle px-3 py-2">
+    <div className="overflow-hidden rounded-xl border border-input bg-background">
+      <div className="flex items-center gap-3 border-b px-3 py-2">
         {image ? (
           <img src={ipfsToHttp(image)} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" />
         ) : (
-          <div className="h-8 w-8 shrink-0 rounded-md bg-surface-elevated" />
+          <div className="h-8 w-8 shrink-0 rounded-md bg-secondary" />
         )}
-        <span className="font-mono text-[11px] text-text-secondary">{title}</span>
-        {!image && <span className="ml-auto text-[11px] text-amber">No artwork yet</span>}
+        <span className="font-mono text-xs text-muted-foreground">{title}</span>
+        {!image && <span className="ml-auto text-xs text-amber">No artwork yet</span>}
       </div>
-      <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap px-3 py-2.5 font-mono text-[11px] leading-relaxed text-text-secondary [overflow-wrap:anywhere]">
+      <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap px-3 py-2.5 font-mono text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
         {JSON.stringify(json, null, 2)}
       </pre>
     </div>
@@ -509,7 +503,7 @@ function OnchainMetadata({
   return (
     <div className="mt-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-text-secondary">Committed on chain</span>
+        <span className="text-xs text-muted-foreground">Committed on chain</span>
         {!onchain.frozen && (
           <Button className="h-8" busy={busy === "freeze"} onClick={() => send("freeze")}>
             Lock forever
@@ -519,9 +513,9 @@ function OnchainMetadata({
       <TokenUriPreview title="tokenURI(1)" json={passTokenJson(committed, 1)} />
       {"error" in pass && <Notice tone="bad">{pass.error}</Notice>}
       {!onchain.frozen && changed.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-dim px-3 py-2.5">
-          <span className="text-[12px] text-text-secondary">
-            Details differ from the chain: <span className="text-text-primary">{changed.join(", ")}</span>.
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ring bg-secondary px-3 py-2.5">
+          <span className="text-sm text-muted-foreground">
+            Details differ from the chain: <span className="text-foreground">{changed.join(", ")}</span>.
             {unsaved && " Save Details first."}
           </span>
           <Button className="h-8" variant="primary" busy={busy === "update"} disabled={unsaved} onClick={() => send("update")}>
@@ -530,10 +524,10 @@ function OnchainMetadata({
         </div>
       )}
       {onchain.frozen && changed.length > 0 && (
-        <p className="text-[12px] text-text-muted">Metadata is locked, so Details changes ({changed.join(", ")}) stay off chain.</p>
+        <p className="text-sm text-muted-foreground">Metadata is locked, so Details changes ({changed.join(", ")}) stay off chain.</p>
       )}
       {nameDiffers && (
-        <p className="text-[12px] text-text-muted">
+        <p className="text-sm text-muted-foreground">
           The contract name stays &ldquo;{onchainName}&rdquo;: names and symbols are fixed at deploy. The new name shows everywhere in the app.
         </p>
       )}
@@ -573,15 +567,15 @@ function TransferControl({
   }
 
   return (
-    <div className="mt-5 rounded-xl border border-border-subtle bg-surface p-4">
+    <div className="mt-5 rounded-xl border bg-background p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] uppercase tracking-[0.14em] text-text-secondary">Transfers</span>
+            <span className="text-xs text-muted-foreground">Transfers</span>
             {transferable ? <Badge tone="good">Allowed</Badge> : <Badge>Blocked</Badge>}
             {locked && <Badge>Locked forever</Badge>}
           </div>
-          <p className="mt-1.5 text-[12px] text-text-muted">
+          <p className="mt-1.5 text-sm text-muted-foreground">
             {transferable
               ? "Holders can sell, gift or move their keystone to another wallet."
               : "Keystones stay in the wallet they were minted to. You can still revoke by burning."}
@@ -628,7 +622,7 @@ function TransferControl({
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-0.5">{children}</dd>
     </div>
   );
