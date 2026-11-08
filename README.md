@@ -68,7 +68,11 @@ store; swap `lib/store.ts` for a database before deploying to serverless.
 
 - `/lab` shows every member screen and state (claim steps, vault, viewer, QR cards, home) side by side, rendered by
   the real components with a real keystone and sample data, plus the Gallery tab's arranging grid. No chip, sign-in
-  or wallet needed.
+  or wallet needed. **Motion set** (`/lab?motion=1`) previews the claim animations: the artwork develops from a
+  grainy print while the chip is checked, takes a holographic foil that follows the phone's tilt (or the cursor)
+  once aligned, the slider springs and fills with the artwork's colours, completing it presses the artwork and
+  sends one ripple, and the artwork travels into the vault banner (View Transitions). All of it switches off under
+  reduced motion. It's opt-in (`PlateClaim motion`) and not yet on the live claim page.
 - `/lab/console` runs the real operator console on this machine's operators, keystones, members and vaults without
   signing in. Its API calls are answered from a snapshot (`AdminApiOverride` in `components/admin/ui.tsx`), so
   saving is off and nothing can change real data.

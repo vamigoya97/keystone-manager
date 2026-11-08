@@ -153,13 +153,28 @@ type SlideMode = "loading" | "ready" | "busy" | "done" | "off";
  * - done:    knob parked at the end with a check
  * - off:     greyed out, nothing to do yet
  */
-function SlideButton({ mode, label, onComplete }: { mode: SlideMode; label: string; onComplete?: () => void }) {
+function SlideButton({
+  mode,
+  label,
+  onComplete,
+  motion = false,
+  fill,
+}: {
+  mode: SlideMode;
+  label: string;
+  onComplete?: () => void;
+  /** Spring release, a little stretch while dragging, haptic ticks and a fill in the artwork's colours. */
+  motion?: boolean;
+  fill?: [string, string];
+}) {
   const track = useRef<HTMLDivElement>(null);
   const start = useRef<{ x: number; max: number } | null>(null);
   const moved = useRef(false);
   const xRef = useRef(0);
   const [x, setXState] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [stretch, setStretch] = useState(1);
+  const last = useRef<{ x: number; t: number; tick: number }>({ x: 0, t: 0, tick: 0 });
   const setX = (v: number) => {
     xRef.current = v;
     setXState(v);
@@ -190,6 +205,18 @@ function SlideButton({ mode, label, onComplete }: { mode: SlideMode; label: stri
       aria-busy={mode === "loading" || mode === "busy"}
       className={`relative h-14 select-none rounded-full border border-[var(--p-rule)] bg-[color-mix(in_srgb,var(--p-ink)_5%,transparent)] touch-pan-y ${greyed ? "opacity-45" : ""}`}
     >
+      {motion && fill && (
+        // The track fills behind the knob with light from the artwork's own colours.
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute inset-y-0 left-0 rounded-full ${dragging ? "" : "transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"}`}
+          style={{
+            width: x + KNOB + PAD * 2,
+            background: `linear-gradient(90deg, ${fill[0]}00, ${fill[0]}55 40%, ${fill[1]}88)`,
+            opacity: mode === "off" || mode === "loading" ? 0 : 1,
+          }}
+        />
+      )}
       <span
         aria-hidden
         className={`pointer-events-none absolute inset-0 flex items-center text-[15px] font-medium text-[var(--p-ink)] ${parked ? "justify-start pl-6" : "justify-center pl-10"}`}
@@ -216,6 +243,15 @@ function SlideButton({ mode, label, onComplete }: { mode: SlideMode; label: stri
           if (!start.current) return;
           const nx = Math.max(0, Math.min(start.current.max, e.clientX - start.current.x));
           if (Math.abs(nx - xRef.current) > 2) moved.current = true;
+          if (motion) {
+            // Stretch with speed, and a light tick every tenth of the way (Android).
+            const now = e.timeStamp;
+            const v = Math.abs(nx - last.current.x) / Math.max(1, now - last.current.t);
+            setStretch(1 + Math.min(0.22, v * 0.12));
+            const tick = Math.floor((nx / Math.max(1, start.current.max)) * 10);
+            if (tick !== last.current.tick) navigator.vibrate?.(4);
+            last.current = { x: nx, t: now, tick };
+          }
           setX(nx);
         }}
         onPointerUp={() => {
@@ -223,8 +259,11 @@ function SlideButton({ mode, label, onComplete }: { mode: SlideMode; label: stri
           const reached = xRef.current >= start.current.max * 0.9;
           start.current = null;
           setDragging(false);
-          if (reached) complete();
-          else setX(0);
+          setStretch(1);
+          if (reached) {
+            if (motion) navigator.vibrate?.([10, 30, 14]);
+            complete();
+          } else setX(0);
         }}
         onPointerCancel={() => {
           start.current = null;
@@ -235,10 +274,10 @@ function SlideButton({ mode, label, onComplete }: { mode: SlideMode; label: stri
           // A plain click or keyboard press completes it too; a drag that fell short doesn't.
           if (live && !moved.current) complete();
         }}
-        className={`absolute top-1 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--p-ink)] text-[var(--p-on-ink)] ${
+        className={`absolute top-1 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--p-ink)] text-[var(--p-on-ink)] ${
           live ? "cursor-grab active:cursor-grabbing" : "cursor-default"
-        } ${dragging ? "" : "transition-[left] duration-200 ease-out"}`}
-        style={{ left: PAD + x - 1 }}
+        } ${dragging ? "" : motion ? "transition-[left,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]" : "transition-[left] duration-200 ease-out"}`}
+        style={{ left: PAD + x - 1, transform: motion ? `scaleX(${stretch})` : undefined }}
       >
         {mode === "loading" || mode === "busy" ? (
           <span aria-hidden className="h-5 w-5 animate-spin rounded-full border-[1.8px] border-current border-t-transparent" />
@@ -248,6 +287,151 @@ function SlideButton({ mode, label, onComplete }: { mode: SlideMode; label: stri
           </svg>
         )}
       </button>
+    </div>
+  );
+}
+
+// ── Claim motion set ─────────────────────────────────────────────
+
+/** Whether the visitor asked for less motion (the motion set then stays still). */
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(q.matches);
+    const on = () => setReduced(q.matches);
+    q.addEventListener("change", on);
+    return () => q.removeEventListener("change", on);
+  }, []);
+  return reduced;
+}
+
+/**
+ * Tilt for the holographic artwork, -1…1 on each axis: from the pointer over
+ * the artwork on a computer, and from the phone's motion sensor on a phone
+ * (iPhone asks permission once, on the first tap of the artwork).
+ */
+function useTilt(enabled: boolean) {
+  const el = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0, active: false });
+  const sensor = useRef(false);
+
+  useEffect(() => {
+    if (!enabled) {
+      setTilt({ x: 0, y: 0, active: false });
+      return;
+    }
+    const onOrient = (e: DeviceOrientationEvent) => {
+      if (e.gamma == null || e.beta == null) return;
+      sensor.current = true;
+      const x = Math.max(-1, Math.min(1, e.gamma / 25));
+      const y = Math.max(-1, Math.min(1, (e.beta - 45) / 25));
+      setTilt({ x, y, active: true });
+    };
+    window.addEventListener("deviceorientation", onOrient);
+    return () => window.removeEventListener("deviceorientation", onOrient);
+  }, [enabled]);
+
+  const handlers = enabled
+    ? {
+        onPointerMove: (e: React.PointerEvent) => {
+          if (sensor.current || e.pointerType === "touch") return;
+          const r = e.currentTarget.getBoundingClientRect();
+          setTilt({ x: ((e.clientX - r.left) / r.width) * 2 - 1, y: ((e.clientY - r.top) / r.height) * 2 - 1, active: true });
+        },
+        onPointerLeave: () => !sensor.current && setTilt({ x: 0, y: 0, active: false }),
+        onClick: () => {
+          // iPhone: motion access needs a tap first.
+          const D = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+          if (!sensor.current && typeof D.requestPermission === "function") D.requestPermission().catch(() => {});
+        },
+      }
+    : {};
+  return { el, tilt, handlers };
+}
+
+/**
+ * The claim artwork with the motion set: it "develops" from a grainy,
+ * washed-out print while the chip is checked (and stays undeveloped until a
+ * tap aligns it), takes a holographic foil that follows the tilt once
+ * aligned, and gives one small press when the slide completes. `morphName`
+ * lets it travel into the vault with a view transition.
+ */
+function MotionArtwork({
+  keystone,
+  developed,
+  checking,
+  holo,
+  pressKey,
+  morphName,
+}: {
+  keystone: PlateKeystone;
+  developed: boolean;
+  checking: boolean;
+  holo: boolean;
+  pressKey: number;
+  morphName?: string;
+}) {
+  const reduced = useReducedMotion();
+  const { el, tilt, handlers } = useTilt(holo && !reduced);
+  const t = tilt.active ? tilt : { x: 0, y: 0 };
+  return (
+    <div className="[perspective:1100px]">
+      <div
+        ref={el}
+        {...handlers}
+        key={pressKey}
+        className={`relative overflow-hidden ${pressKey > 0 && !reduced ? "plate-press" : ""}`}
+        style={{
+          transform: holo && !reduced ? `rotateY(${t.x * 9}deg) rotateX(${-t.y * 9}deg)` : undefined,
+          transition: tilt.active ? "transform 80ms linear" : "transform 600ms cubic-bezier(0.2,0.7,0.2,1)",
+          viewTransitionName: morphName,
+        }}
+      >
+        <div
+          style={{
+            filter: developed ? "none" : "grayscale(1) sepia(0.2) contrast(0.82) brightness(1.06) blur(1.2px)",
+            opacity: developed ? 1 : 0.88,
+            transition: "filter 1.4s cubic-bezier(0.2,0.7,0.2,1), opacity 1.4s",
+          }}
+        >
+          <TokenCard keystone={keystone} />
+        </div>
+        {/* Film grain while it develops. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-hidden mix-blend-overlay"
+          style={{ opacity: developed ? 0 : checking ? 0.55 : 0.35, transition: "opacity 1.2s" }}
+        >
+          {!developed && !reduced && <div className="plate-grain" />}
+        </div>
+        {/* Holographic foil and glare, following the tilt. */}
+        {holo && (
+          <>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 mix-blend-color-dodge"
+              style={{
+                opacity: tilt.active ? 0.38 : 0.12,
+                transition: "opacity 400ms",
+                backgroundImage:
+                  "linear-gradient(115deg, transparent 18%, #ff8fd2 30%, #8fe9ff 40%, #fff3a1 50%, #a6ffb8 60%, #c8a6ff 70%, transparent 82%)",
+                backgroundSize: "260% 260%",
+                backgroundPosition: `${50 + t.x * 45}% ${50 + t.y * 45}%`,
+              }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 mix-blend-overlay"
+              style={{
+                opacity: tilt.active ? 0.5 : 0,
+                transition: "opacity 400ms",
+                background: `radial-gradient(circle at ${50 + t.x * 50}% ${50 + t.y * 50}%, rgba(255,255,255,0.65), transparent 45%)`,
+              }}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -276,6 +460,8 @@ export function PlateClaim({
   onClaim,
   onEnter,
   contained = false,
+  motion = false,
+  morphName,
 }: {
   keystone: PlateKeystone;
   status: AccessStatus;
@@ -287,7 +473,17 @@ export function PlateClaim({
   onClaim?: () => void;
   onEnter?: () => void;
   contained?: boolean;
+  /**
+   * The motion set (design lab): the artwork develops while aligning, takes a
+   * holographic tilt once aligned, the slider springs and fills, and
+   * completing the slide presses the artwork and sends one ripple out.
+   */
+  motion?: boolean;
+  /** view-transition-name for the artwork, so it can travel into the vault. */
+  morphName?: string;
 }) {
+  const [press, setPress] = useState(0);
+  const [ripple, setRipple] = useState(0);
   const t = resolveTheme(keystone).claim;
   const forging = phase === "minting" || securing;
   const forged = phase === "minted";
@@ -306,13 +502,25 @@ export function PlateClaim({
   else if (status === "holder") state = ["held", "You hold this keystone.", false];
   else if (access === null) state = ["tap-item", "Hold your phone to the item to secure this keystone.", false];
 
+  // With the motion set, completing the slide presses the artwork and sends a ripple, and
+  // the next step (sign-in, forging, the vault) follows a beat later so the moment registers.
+  const reducedMotion = useReducedMotion();
+  const withMoment = (fn?: () => void) =>
+    motion && !reducedMotion
+      ? () => {
+          setPress((n) => n + 1);
+          setRipple((n) => n + 1);
+          setTimeout(() => fn?.(), 420);
+        }
+      : fn;
+
   let slide: { mode: SlideMode; label: string; onComplete?: () => void };
   if (access === "verifying") slide = { mode: "loading", label: t.verifying };
   else if (forging) slide = { mode: "busy", label: SECURING };
   else if (forged) slide = { mode: "done", label: "Secured" };
-  else if (holder) slide = { mode: "ready", label: t.enterButton, onComplete: onEnter };
+  else if (holder) slide = { mode: "ready", label: t.enterButton, onComplete: withMoment(onEnter) };
   // Signed in or not, it's the same single slide: sign-in, if needed, is part of securing.
-  else if (ready) slide = { mode: "ready", label: t.claimButton, onComplete: onClaim };
+  else if (ready) slide = { mode: "ready", label: t.claimButton, onComplete: withMoment(onClaim) };
   else slide = { mode: "off", label: status === "revoked" ? "Access revoked" : t.claimButton };
 
   return (
@@ -329,10 +537,27 @@ export function PlateClaim({
           )}
         </div>
         <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center">
-          <TokenCard keystone={keystone} />
+          {motion ? (
+            <MotionArtwork
+              keystone={keystone}
+              developed={access === "chip" || status === "holder" || forging || forged}
+              checking={access === "verifying"}
+              holo={ready || holder || forging || forged}
+              pressKey={press}
+              morphName={morphName}
+            />
+          ) : (
+            <div style={{ viewTransitionName: morphName }}>
+              <TokenCard keystone={keystone} />
+            </div>
+          )}
         </div>
+        {motion && ripple > 0 && (
+          // One ripple from where the knob lands.
+          <span key={ripple} aria-hidden className="plate-ripple z-0 motion-reduce:hidden" style={{ right: 20, bottom: 60, left: "auto" }} />
+        )}
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-xl px-5 pb-[max(32px,calc(env(safe-area-inset-bottom)+16px))]">
-          <SlideButton key={`${slide.mode}-${slide.label}`} {...slide} />
+          <SlideButton key={`${slide.mode}-${slide.label}`} {...slide} motion={motion} fill={keystone.palette} />
         </div>
       </Backdrop>
     </div>
@@ -583,6 +808,7 @@ export function PlateVault({
   onOpen,
   onSignOut,
   contained = false,
+  morphName,
 }: {
   keystone: PlateKeystone;
   items: GalleryItem[];
@@ -591,6 +817,8 @@ export function PlateVault({
   onOpen: (i: number) => void;
   onSignOut?: () => void;
   contained?: boolean;
+  /** view-transition-name for the top of the vault (the banner, or the first row), where the claim artwork lands. */
+  morphName?: string;
 }) {
   const banner = resolveTheme(keystone).gallery.banner;
   const logo = keystone.tokenImage;
@@ -601,7 +829,7 @@ export function PlateVault({
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
         <h1 className="sr-only">{keystone.name}</h1>
         {banner?.src && (
-          <div className="mb-[2px] aspect-[3/1] overflow-hidden">
+          <div className="mb-[2px] aspect-[3/1] overflow-hidden" style={{ viewTransitionName: morphName }}>
             <MediaView media={banner} className="h-full w-full object-cover" />
           </div>
         )}
@@ -614,7 +842,7 @@ export function PlateVault({
         ) : items.length === 0 ? (
           <p className="px-5 pt-10 text-[15px] text-[var(--p-slate)]">Nothing in the vault yet.</p>
         ) : (
-          <div className="flex flex-col gap-[2px]">
+          <div className="flex flex-col gap-[2px]" style={{ viewTransitionName: banner?.src ? undefined : morphName }}>
             {vaultRows(items).map((row) =>
               row.wide ? (
                 <VaultItem key={keyOf(items[row.index])} item={items[row.index]} logo={logo} onOpen={() => onOpen(row.index)} />

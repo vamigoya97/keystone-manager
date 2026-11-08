@@ -42,13 +42,13 @@ const SILENCE = (() => {
 export default async function LabPage({
   searchParams,
 }: {
-  searchParams: Promise<{ k?: string }>;
+  searchParams: Promise<{ k?: string; motion?: string }>;
 }) {
   if (process.env.NODE_ENV === "production") notFound();
 
   const keystones = await listKeystones();
   if (!keystones.length) notFound();
-  const { k } = await searchParams;
+  const { k, motion } = await searchParams;
   const current =
     keystones.find((x) => x.slug === k) ??
     keystones.find((x) => x.gallery.length) ??
@@ -138,6 +138,7 @@ export default async function LabPage({
         options={keystones.map((x) => ({ slug: x.slug, name: x.name }))}
         items={items}
         held={held}
+        motion={motion === "1"}
       />
   );
 }

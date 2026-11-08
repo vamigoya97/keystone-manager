@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { GalleryItem, PublicKeystone } from "@/lib/keystones";
 import type { AccessStatus } from "@/lib/useAccess";
@@ -41,13 +42,17 @@ export default function LabView({
   options,
   items,
   held,
+  motion,
 }: {
   keystone: PublicKeystone;
   options: { slug: string; name: string }[];
   items: GalleryItem[];
   held: MemberKeystone[];
+  /** Show the claim motion set (developing artwork, holographic tilt, spring slider, ripple, morph into the vault). */
+  motion: boolean;
 }) {
   const router = useRouter();
+  const go = (slug: string, m: boolean) => router.push(`/lab?k=${encodeURIComponent(slug)}${m ? "&motion=1" : ""}`);
 
   return (
     <main className="min-h-screen bg-surface px-6 py-8 sm:px-10">
@@ -62,11 +67,24 @@ export default function LabView({
             The live components with sample state. Edit <code className="font-mono text-text-primary">components/nfc/plate.tsx</code> and every phone updates.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-4">
+        <div role="group" aria-label="Claim motion set" className="flex rounded-xl border border-border-default bg-surface-raised p-1 text-[13px]">
+          {[false, true].map((m) => (
+            <button
+              key={String(m)}
+              aria-pressed={motion === m}
+              onClick={() => go(keystone.slug, m)}
+              className={`rounded-lg px-3 py-1.5 ${motion === m ? "bg-surface-elevated text-text-primary" : "text-text-secondary hover:text-text-primary"}`}
+            >
+              {m ? "Motion set" : "Still"}
+            </button>
+          ))}
+        </div>
         <label className="flex items-center gap-2 text-[12px] text-text-secondary">
           Keystone
           <select
             value={keystone.slug}
-            onChange={(e) => router.push(`/lab?k=${encodeURIComponent(e.target.value)}`)}
+            onChange={(e) => go(e.target.value, motion)}
             className="rounded-xl border border-border-default bg-surface-raised px-3 py-2 text-[13px] text-text-primary"
           >
             {options.map((o) => (
@@ -76,11 +94,12 @@ export default function LabView({
             ))}
           </select>
         </label>
+        </div>
       </header>
 
       <Section title="Secure (claim)" href={`/x/${keystone.slug}`}>
         {CLAIM_CASES.map((c) => (
-          <ClaimPhone key={`${keystone.slug}-${c.id}`} keystone={keystone} c={c} items={items} />
+          <ClaimPhone key={`${keystone.slug}-${c.id}-${motion}`} keystone={keystone} c={c} items={items} motion={motion} />
         ))}
       </Section>
 
@@ -136,8 +155,25 @@ function Phone({ title, note, children }: { title: string; note: string; childre
 }
 
 /** One claim state. Sliding plays the flow: sign-in (when signed out), securing, then the vault. */
-function ClaimPhone({ keystone, c, items }: { keystone: PublicKeystone; c: ClaimCase; items: GalleryItem[] }) {
+function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; c: ClaimCase; items: GalleryItem[]; motion: boolean }) {
   const [phase, setPhase] = useState<MintPhase>(c.phase);
+  const [access, setAccess] = useState(c.access);
+  const morphName = motion ? `art-${c.id}` : undefined;
+
+  // With the motion set, the aligning phone loops checking → aligned so the artwork can be seen developing.
+  useEffect(() => {
+    if (!motion || c.id !== "i") return;
+    const id = setInterval(() => setAccess((a) => (a === "verifying" ? "chip" : "verifying")), 3200);
+    return () => clearInterval(id);
+  }, [motion, c.id]);
+
+  /** Into the vault; with the motion set, the artwork travels into it (View Transitions, where supported). */
+  function enterVault() {
+    const show = () => flushSync(() => setInVault(true));
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (motion && doc.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) doc.startViewTransition(show);
+    else show();
+  }
   const [signIn, setSignIn] = useState(false);
   const [inVault, setInVault] = useState(false);
   const [run, setRun] = useState(0);
@@ -151,7 +187,7 @@ function ClaimPhone({ keystone, c, items }: { keystone: PublicKeystone; c: Claim
 
   function finishSecuring() {
     setPhase("minting");
-    setTimeout(() => setInVault(true), 1500);
+    setTimeout(enterVault, 1500);
     setTimeout(reset, 5000);
   }
 
@@ -160,21 +196,23 @@ function ClaimPhone({ keystone, c, items }: { keystone: PublicKeystone; c: Claim
       <PhonePreview>
         <div key={run} className="h-full overflow-y-auto">
           {inVault ? (
-            <PlateVault keystone={keystone} items={items} onOpen={() => {}} contained />
+            <PlateVault keystone={keystone} items={items} onOpen={() => {}} contained morphName={morphName} />
           ) : (
             <PlateClaim
               keystone={keystone}
               status={c.status}
-              access={c.access}
+              access={access}
               phase={phase}
               securing={signIn}
               error={c.error}
               onClaim={() => (c.status === "signed-out" ? setSignIn(true) : finishSecuring())}
               onEnter={() => {
-                setInVault(true);
+                enterVault();
                 setTimeout(reset, 3500);
               }}
               contained
+              motion={motion}
+              morphName={morphName}
             />
           )}
         </div>
