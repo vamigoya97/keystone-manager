@@ -21,11 +21,22 @@ export const CLAIM_LIMITS = {
   textSize: { min: 12, max: 20 },
   dim: { min: 0, max: 80 },
   alertChars: 80,
+  /** Slide button labels (secure, login, vault) sit on one line in the button. */
+  labelChars: 32,
 };
 
+/**
+ * Standard wording for the claim's four steps, each shown on the slide button:
+ * i tap the keystone (the chip is read: aligning), ii slide to secure, iii log
+ * in (only when signed out), iv the keystone is forged and the vault opens on
+ * its own, with no second slide.
+ */
 const DEFAULT_COPY = {
   aligning: "Aligning keystone…",
   failed: "This keystone couldn't be aligned.",
+  secure: "Secure keystone",
+  login: "Signing in…",
+  vault: "Opening the vault…",
 };
 
 /** The claim screen's styling with defaults filled in. */
@@ -61,8 +72,13 @@ export function resolveTheme(exp: Named) {
       failed: DEFAULT_COPY.failed,
       /** The operator's own "not aligned" message, shown instead of the server's reason. */
       failedCustom: alerts.failed,
-      /** The slide button's label once aligned; one slide signs in (if needed) and forges. */
-      claimButton: "Secure keystone",
+      // The slide button through the four steps: i verifying (above), then these three.
+      /** ii Aligned: one slide does the rest. */
+      claimButton: alerts.secure || DEFAULT_COPY.secure,
+      /** iii While Privy sign-in is open (skipped when already signed in). */
+      login: alerts.login || DEFAULT_COPY.login,
+      /** iv While forging, until the vault opens on its own. */
+      vault: alerts.vault || DEFAULT_COPY.vault,
       enterButton: "Enter the vault",
     },
     gallery: {
@@ -91,7 +107,8 @@ const num = (v: unknown, { min, max }: { min: number; max: number }) =>
 const oneOf = <T extends string>(v: unknown, options: readonly T[]) => (options.includes(v as T) ? (v as T) : undefined);
 // Short plain text: trimmed, single line, no control characters.
 // eslint-disable-next-line no-control-regex
-const copy = (v: unknown) => (typeof v === "string" ? v.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, CLAIM_LIMITS.alertChars) || undefined : undefined);
+const copy = (v: unknown, max: number = CLAIM_LIMITS.alertChars) =>
+  typeof v === "string" ? v.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max) || undefined : undefined;
 
 /** Drops undefined fields, and the object itself when nothing is left. */
 function compact<T extends object>(o: T): T | undefined {
@@ -117,6 +134,9 @@ function claim(v: unknown): ClaimStyle | undefined {
     text: compact({ size: num(c.text?.size, L.textSize), color: hex(c.text?.color), align: oneOf(c.text?.align, ["left", "center"] as const) }),
     alerts: compact({
       aligning: copy(c.alerts?.aligning),
+      secure: copy(c.alerts?.secure, L.labelChars),
+      login: copy(c.alerts?.login, L.labelChars),
+      vault: copy(c.alerts?.vault, L.labelChars),
       hintForge: copy(c.alerts?.hintForge),
       hintSecure: copy(c.alerts?.hintSecure),
       failed: copy(c.alerts?.failed),

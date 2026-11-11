@@ -124,7 +124,8 @@ export function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-2">
+    // content-start: in a row of fields, a taller neighbour (one with a hint) mustn't push this input down.
+    <label className="grid content-start gap-2">
       <span className="text-sm leading-none font-medium select-none">{label}</span>
       {children}
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}

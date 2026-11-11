@@ -353,14 +353,16 @@ function ItemNtagSheet({ batchId }: { batchId: string }) {
   return (
     <div className="rounded-xl border bg-background p-4">
       <div className="mb-3 text-xs text-muted-foreground">Program NTAG 424 DNA items</div>
+      {/* The hint sits under the whole row so the button lines up with the URL box, not the hint. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[220px] flex-1">
-          <Field label="Public site URL" hint="Must be https://">
+          <Field label="Public site URL">
             <Input className="font-mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
           </Field>
         </div>
-        <Button variant="primary" busy={busy} onClick={load}>{sheet ? "Refresh sheet" : "Show programming sheet"}</Button>
+        <Button variant="primary" busy={busy} onClick={load} className="h-9">{sheet ? "Refresh sheet" : "Show programming sheet"}</Button>
       </div>
+      <p className="mt-2 text-xs text-muted-foreground">Must be https://</p>
       {error && <div className="mt-3"><Notice tone="bad">{error}</Notice></div>}
       {sheet && (
         <div className="mt-4 space-y-3">

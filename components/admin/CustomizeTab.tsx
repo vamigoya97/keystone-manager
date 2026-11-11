@@ -15,14 +15,28 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button, Field, Notice, Panel, useAdminApi } from "./ui";
 import { Input } from "@/components/ui/input";
 
-/** The claim screen's states as the preview shows them, numbered i–iv (the name is the tooltip). */
-type PreviewState = { id: string; numeral: string; name: string; status: AccessStatus; access: ClaimAccess; phase: MintPhase };
+/**
+ * The claim screen's states as the preview shows them (the name is the
+ * tooltip). i–iv are the four steps of a claim, numbered like their wording
+ * fields: tap the keystone, slide to secure, log in, and the vault opens with
+ * no second slide. v is a holder coming back.
+ */
+type PreviewState = { id: string; numeral: string; name: string; status: AccessStatus; access: ClaimAccess; phase: MintPhase; securing?: boolean };
 const PREVIEW_STATES: PreviewState[] = [
-  { id: "aligning", numeral: "i", name: "Aligning", status: "signed-out", access: "verifying", phase: "idle" },
-  { id: "aligned", numeral: "ii", name: "Aligned: slide to secure", status: "signed-out", access: "chip", phase: "idle" },
-  { id: "securing", numeral: "iii", name: "Securing (sign-in and forging)", status: "not-holder", access: "chip", phase: "minting" },
-  { id: "holder", numeral: "iv", name: "Holder returns: slide to enter", status: "holder", access: null, phase: "idle" },
+  { id: "tap", numeral: "i", name: "Keystone tapped: aligning", status: "signed-out", access: "verifying", phase: "idle" },
+  { id: "slide", numeral: "ii", name: "Aligned: slide to secure", status: "signed-out", access: "chip", phase: "idle" },
+  { id: "login", numeral: "iii", name: "Log in (only when signed out)", status: "signed-out", access: "chip", phase: "idle", securing: true },
+  { id: "vault", numeral: "iv", name: "Forging, then the vault opens on its own", status: "not-holder", access: "chip", phase: "minting" },
+  { id: "holder", numeral: "v", name: "Holder returns: slide to enter", status: "holder", access: null, phase: "idle" },
 ];
+
+/** The four claim steps' slide-button wording, in order; each previews its step. */
+const STEP_COPY = [
+  { key: "aligning", label: "i · Tap keystone", preview: "tap", standard: "verifying", max: CLAIM_LIMITS.alertChars },
+  { key: "secure", label: "ii · Slide to secure", preview: "slide", standard: "claimButton", max: CLAIM_LIMITS.labelChars },
+  { key: "login", label: "iii · Log in", preview: "login", standard: "login", max: CLAIM_LIMITS.labelChars },
+  { key: "vault", label: "iv · Open the vault", preview: "vault", standard: "vault", max: CLAIM_LIMITS.labelChars },
+] as const;
 
 /** What this tab owns; the gallery banner is set in the Gallery tab. */
 const own = (t: KeystoneTheme) => JSON.stringify(sanitizeTheme({ background: t.background, claim: t.claim }));
@@ -30,8 +44,9 @@ const own = (t: KeystoneTheme) => JSON.stringify(sanitizeTheme({ background: t.b
 /**
  * The member screens' background and wording: media and color behind the
  * artwork (and under the vault's description), how dark the media gets, the
- * text color, and the aligning and not-aligned messages. A live phone preview
- * shows each claim state; slide the button there to play securing.
+ * text color, and the wording of the four claim steps and the not-aligned
+ * message. A live phone preview shows each claim step; slide the button
+ * there to play log in and opening the vault.
  */
 export default function CustomizeTab({
   detail,
@@ -43,8 +58,9 @@ export default function CustomizeTab({
   const { keystone } = detail;
   const api = useAdminApi();
   const [theme, setTheme] = useState<KeystoneTheme>(keystone.theme ?? {});
-  const [previewId, setPreviewId] = useState("aligned");
-  const [playing, setPlaying] = useState(false);
+  const [previewId, setPreviewId] = useState("slide");
+  /** The slide demo: log in, then forging into the vault, then back to the chosen step. */
+  const [playing, setPlaying] = useState<"login" | "minting" | "minted" | null>(null);
   const [replay, setReplay] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -88,6 +104,12 @@ export default function CustomizeTab({
     }
   }
 
+  function showState(id: string) {
+    setPreviewId(id);
+    setPlaying(null);
+    setReplay((r) => r + 1);
+  }
+
   const preview = useMemo(() => ({ ...keystone, theme }), [keystone, theme]);
   const L = CLAIM_LIMITS;
 
@@ -123,11 +145,23 @@ export default function CustomizeTab({
 
         <Panel title="Wording">
           <div className="grid gap-4 sm:grid-cols-2">
-            <CopyInput label="While aligning" placeholder={copy.verifying} value={theme.claim?.alerts?.aligning} onChange={(v) => setClaim("alerts", { aligning: v })} />
+            {STEP_COPY.map((s) => (
+              <CopyInput
+                key={s.key}
+                label={s.label}
+                placeholder={copy[s.standard]}
+                max={s.max}
+                value={theme.claim?.alerts?.[s.key]}
+                onChange={(v) => setClaim("alerts", { [s.key]: v })}
+                onFocus={() => showState(s.preview)}
+              />
+            ))}
             <CopyInput label="Not aligned" placeholder={copy.failed} value={theme.claim?.alerts?.failed} onChange={(v) => setClaim("alerts", { failed: v })} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            "While aligning" shows on the greyed-out slide button. "Not aligned" is read out and shown on the corner icon. Leave a message empty to use the standard wording shown in grey.
+            The slide button's wording through a claim: i the keystone is tapped, ii one slide secures it, iii log in (skipped when already signed in), iv
+            the vault opens on its own, with no second slide. Select a field to preview its step. "Not aligned" is read out and shown on the corner icon. Leave
+            a field empty to use the standard wording shown in grey.
           </p>
         </Panel>
 
@@ -169,11 +203,15 @@ export default function CustomizeTab({
               keystone={preview}
               status={state.status}
               access={state.access}
-              phase={playing ? "minting" : state.phase}
+              phase={playing && playing !== "login" ? playing : state.phase}
+              securing={playing ? playing === "login" : state.securing}
               onClaim={() => {
-                // Demo the slide: securing, then back to where it started.
-                setPlaying(true);
-                setTimeout(() => setPlaying(false), 1800);
+                // Demo the slide: log in, forging, the vault opening, then back to where it started.
+                const next = (p: typeof playing) => (q: typeof playing) => (q ? p : q);
+                setPlaying("login");
+                setTimeout(() => setPlaying(next("minting")), 1400);
+                setTimeout(() => setPlaying(next("minted")), 3000);
+                setTimeout(() => setPlaying(null), 3800);
               }}
               onEnter={() => {}}
               contained
@@ -187,12 +225,7 @@ export default function CustomizeTab({
             variant="outline"
             size="sm"
             value={previewId}
-            onValueChange={(v) => {
-              if (!v) return;
-              setPreviewId(v);
-              setPlaying(false);
-              setReplay((r) => r + 1);
-            }}
+            onValueChange={(v) => v && showState(v)}
             aria-label="Claim screen state"
           >
             {PREVIEW_STATES.map((p) => (
@@ -257,13 +290,28 @@ function ColorInput({
   );
 }
 
-function CopyInput({ label, placeholder, value, onChange }: { label: string; placeholder: string; value?: string; onChange: (v: string | undefined) => void }) {
+function CopyInput({
+  label,
+  placeholder,
+  value,
+  max = CLAIM_LIMITS.alertChars,
+  onChange,
+  onFocus,
+}: {
+  label: string;
+  placeholder: string;
+  value?: string;
+  max?: number;
+  onChange: (v: string | undefined) => void;
+  onFocus?: () => void;
+}) {
   return (
     <Field label={label}>
       <Input
         placeholder={placeholder}
         value={value ?? ""}
-        maxLength={CLAIM_LIMITS.alertChars}
+        maxLength={max}
+        onFocus={onFocus}
         onChange={(e) => onChange(e.target.value || undefined)}
       />
     </Field>

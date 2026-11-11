@@ -219,10 +219,11 @@ function SlideButton({
       )}
       <span
         aria-hidden
-        className={`pointer-events-none absolute inset-0 flex items-center text-[15px] font-medium text-[var(--p-ink)] ${parked ? "justify-start pl-6" : "justify-center pl-10"}`}
+        className={`pointer-events-none absolute inset-0 flex items-center text-[15px] font-medium text-[var(--p-ink)] ${parked ? "justify-start pl-6 pr-16" : "justify-center pl-10 pr-6"}`}
         style={{ opacity: parked ? 1 : 1 - progress }}
       >
-        {label}
+        {/* Operators can reword the label, so a long one ends in an ellipsis rather than running under the knob. */}
+        <span className="min-w-0 truncate">{label}</span>
       </span>
       <button
         type="button"
@@ -438,17 +439,15 @@ function MotionArtwork({
 
 // ── Claim ────────────────────────────────────────────────────────
 
-/** Sign-in and forging, shown as one step. */
-const SECURING = "Securing your keystone…";
-
 /**
  * The claim screen: the artwork centred on the operator's background, a
  * status icon in the top-left corner, and the slide button at the bottom.
- * Aligning greys the button out with a spinning knob. Once aligned, one slide
- * does the rest: sign-in (when signed out) and forging run as a single
- * "securing" step with the knob parked and spinning, and the vault opens as
- * soon as the keystone is forged. A failed forge is the only reason to slide
- * again.
+ * Four steps, each with its own (customizable) slide-button wording:
+ * i tapping the keystone aligns it, with the button greyed out and its knob
+ * spinning; ii one slide secures it; iii log in, only when signed out; iv the
+ * keystone is forged and the vault opens on its own, with no second slide.
+ * Through iii and iv the knob stays parked and spinning. A failed forge is the
+ * only reason to slide again.
  */
 export function PlateClaim({
   keystone,
@@ -485,7 +484,10 @@ export function PlateClaim({
   const [press, setPress] = useState(0);
   const [ripple, setRipple] = useState(0);
   const t = resolveTheme(keystone).claim;
-  const forging = phase === "minting" || securing;
+  // The four steps: i tap (verifying), ii slide to secure (ready), iii log in, iv forge and open the vault.
+  const vaulting = phase === "minting" || phase === "minted";
+  const loggingIn = securing && !vaulting;
+  const forging = loggingIn || phase === "minting";
   const forged = phase === "minted";
   const holder = status === "holder" && !forging && !forged;
   const ready = !holder && !forging && !forged && status !== "revoked" && status !== "loading" && access === "chip";
@@ -493,8 +495,8 @@ export function PlateClaim({
   // Each step is one icon in the corner; the words stay for screen readers and as a tooltip.
   let state: [StatusIcon, string, boolean] | null = null;
   if (access === "verifying") state = ["checking", t.verifying, false];
-  else if (forging) state = ["forging", SECURING, false];
-  else if (forged) state = ["forged", "Secured. Opening the vault…", false];
+  else if (loggingIn) state = ["forging", t.login, false];
+  else if (vaulting) state = [forged ? "forged" : "forging", t.vault, false];
   else if (status === "revoked") state = ["revoked", "Your access to this keystone was revoked.", true];
   else if (access === "failed") state = ["alert", `${t.failedCustom || error || t.failed} Hold your phone to the item again.`, true];
   else if (phase === "error") state = ["alert", `${error ?? "Forging didn't finish."} Slide again to retry.`, true];
@@ -516,8 +518,9 @@ export function PlateClaim({
 
   let slide: { mode: SlideMode; label: string; onComplete?: () => void };
   if (access === "verifying") slide = { mode: "loading", label: t.verifying };
-  else if (forging) slide = { mode: "busy", label: SECURING };
-  else if (forged) slide = { mode: "done", label: "Secured" };
+  else if (loggingIn) slide = { mode: "busy", label: t.login };
+  // Forged: the vault opens on its own, no second slide.
+  else if (vaulting) slide = { mode: forged ? "done" : "busy", label: t.vault };
   else if (holder) slide = { mode: "ready", label: t.enterButton, onComplete: withMoment(onEnter) };
   // Signed in or not, it's the same single slide: sign-in, if needed, is part of securing.
   else if (ready) slide = { mode: "ready", label: t.claimButton, onComplete: withMoment(onClaim) };

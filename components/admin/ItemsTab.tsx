@@ -286,16 +286,18 @@ function Ntag424Sheet({ slug }: { slug: string }) {
         Each chip&apos;s UID becomes its ID in the members list.
       </p>
 
+      {/* The hint sits under the whole row so the button lines up with the URL box, not the hint. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[240px] flex-1">
-          <Field label="Public site URL" hint="Must be https:// — this is what the chip opens">
+          <Field label="Public site URL">
             <Input className="font-mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://yourdomain.com" />
           </Field>
         </div>
-        <Button variant="primary" busy={busy} onClick={load}>
+        <Button variant="primary" busy={busy} onClick={load} className="h-9">
           {sheet ? "Refresh sheet" : "Show programming sheet"}
         </Button>
       </div>
+      <p className="mt-2 text-xs text-muted-foreground">Must be https:// — this is what the chip opens</p>
 
       {error && <div className="mt-3"><Notice tone="bad">{error}</Notice></div>}
 

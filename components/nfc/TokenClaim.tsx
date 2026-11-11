@@ -119,10 +119,14 @@ export default function TokenClaim({
       setSigningIn(false);
       mint();
     } else if (claimAfterLogin.current && status === "holder") {
-      // Signed in as someone who already holds it: nothing to forge.
+      // Signed in as someone who already holds it: nothing to forge, straight to the vault.
       claimAfterLogin.current = false;
       setSigningIn(false);
       router.replace(galleryHref);
+    } else if (claimAfterLogin.current && status === "revoked") {
+      // Signed in as someone whose access was revoked: stop, so the screen shows why.
+      claimAfterLogin.current = false;
+      setSigningIn(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);

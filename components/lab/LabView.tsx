@@ -23,9 +23,10 @@ type ClaimCase = {
 };
 
 const CLAIM_CASES: ClaimCase[] = [
-  { id: "i", title: "i · Aligning", note: "Slide button greyed out, knob spinning while the chip is checked", status: "signed-out", access: "verifying", phase: "idle" },
-  { id: "ii", title: "ii · Aligned", note: "One slide: sign in with Privy and forge, then straight to the vault", status: "signed-out", access: "chip", phase: "idle" },
-  { id: "iii", title: "iii · Securing", note: "Signing in and forging as one step; the vault opens when it's done", status: "not-holder", access: "chip", phase: "minting" },
+  { id: "i", title: "i · Tap keystone", note: "Tapped: slide button greyed out, knob spinning while the chip is checked", status: "signed-out", access: "verifying", phase: "idle" },
+  { id: "ii", title: "ii · Slide to secure", note: "One slide does the rest: log in (when signed out), forge, then the vault", status: "signed-out", access: "chip", phase: "idle" },
+  { id: "iii", title: "iii · Log in", note: "Privy sign-in, only when signed out; forging follows on its own", status: "signed-out", access: "chip", phase: "idle", securing: true },
+  { id: "iv", title: "iv · Open the vault", note: "Forging, then the vault opens on its own: no second slide", status: "not-holder", access: "chip", phase: "minting" },
   { id: "holder", title: "Holder returns", note: "Already holds it, without a fresh tap: slide to enter the vault", status: "holder", access: null, phase: "idle" },
   { id: "failed", title: "Not aligned", note: "Slide button stays off; tap the item again", status: "signed-out", access: "failed", phase: "idle", error: "This keystone couldn't be aligned." },
   { id: "no-tap", title: "No tap yet", note: "Slide button off until the item is tapped", status: "signed-out", access: null, phase: "idle" },
@@ -154,7 +155,7 @@ function Phone({ title, note, children }: { title: string; note: string; childre
   );
 }
 
-/** One claim state. Sliding plays the flow: sign-in (when signed out), securing, then the vault. */
+/** One claim state. Sliding plays the flow: log in (when signed out), forging, then the vault, with no second slide. */
 function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; c: ClaimCase; items: GalleryItem[]; motion: boolean }) {
   const [phase, setPhase] = useState<MintPhase>(c.phase);
   const [access, setAccess] = useState(c.access);
@@ -203,7 +204,7 @@ function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; 
               status={c.status}
               access={access}
               phase={phase}
-              securing={signIn}
+              securing={signIn || !!c.securing}
               error={c.error}
               onClaim={() => (c.status === "signed-out" ? setSignIn(true) : finishSecuring())}
               onEnter={() => {

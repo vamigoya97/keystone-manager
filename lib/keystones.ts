@@ -182,8 +182,22 @@ export interface ClaimStyle {
   };
   /** The description under the artwork. */
   text?: { size?: number; color?: string; align?: "left" | "center" };
-  /** Wording and colors of the alert above the artwork and the hints under it. Empty → standard copy. */
-  alerts?: { aligning?: string; hintForge?: string; hintSecure?: string; failed?: string; color?: string; background?: string };
+  /**
+   * Claim wording and alert colors. Empty → standard copy. The slide button's
+   * four steps: aligning (keystone tapped), secure (slide), login (signing
+   * in), vault (forging; the vault opens on its own).
+   */
+  alerts?: {
+    aligning?: string;
+    secure?: string;
+    login?: string;
+    vault?: string;
+    hintForge?: string;
+    hintSecure?: string;
+    failed?: string;
+    color?: string;
+    background?: string;
+  };
 }
 
 /** What non-holders may see: everything except the gallery itself. */
