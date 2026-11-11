@@ -10,7 +10,12 @@
     "lint": "next lint",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "compile:pass": "hardhat build contracts/KeystonePass.sol && node -e \"const a=require('./artifacts/contracts/KeystonePass.sol/KeystonePass.json');require('fs').writeFileSync('lib/keystone-pass.json',JSON.stringify({abi:a.abi,bytecode:a.bytecode}))\""
+    "compile:pass": "hardhat build contracts/KeystonePass.sol && node -e \"const a=require('./artifacts/contracts/KeystonePass.sol/KeystonePass.json');require('fs').writeFileSync('lib/keystone-pass.json',JSON.stringify({abi:a.abi,bytecode:a.bytecode}))\"",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "db:import": "tsx scripts/db-import.ts",
+    "test:store": "node --import tsx --test test/store.test.ts",
+    "db:local": "tsx scripts/db-local.ts"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1",
@@ -19,8 +24,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.0",
+    "drizzle-orm": "^0.45.4",
     "lucide-react": "^0.544.0",
     "next": "^15.3.0",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "radix-ui": "^1.8.1",
     "react": "^19.1.0",
@@ -35,9 +42,12 @@
     "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "drizzle-kit": "^0.31.11",
+    "embedded-postgres": "17.10.0-beta.17",
     "hardhat": "^3.13.0",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.8.0"

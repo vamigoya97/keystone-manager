@@ -8,14 +8,14 @@ import {
   type ItemBatch,
   type Member,
   type Operator,
-} from "./keystones";
+} from "../keystones";
+import { CLAIM_LOCK_MS, ClaimBusyError, nextFreeSlug, ReplayError, type Store } from "./types";
 
 /**
- * Minimal JSON-file store for keystones and members.
- *
- * Fine for a single long-running server (local, VPS, container). On
- * serverless hosts the filesystem is ephemeral — swap these functions for
- * a database (Postgres, Supabase, Vercel KV…) keeping the same signatures.
+ * JSON-file store: data/store.json (or STORE_FILE). Used when DATABASE_URL
+ * isn't set. Fine for a single long-running server (local, VPS, container);
+ * on serverless hosts the filesystem is ephemeral, so hosting uses
+ * lib/stores/postgres.ts instead.
  */
 
 interface Data {
@@ -29,7 +29,7 @@ interface Data {
   chipCounters: Record<string, number>;
 }
 
-const FILE = path.join(process.cwd(), "data", "store.json");
+const FILE = process.env.STORE_FILE || path.join(process.cwd(), "data", "store.json");
 
 let cache: Data | null = null;
 let queue: Promise<unknown> = Promise.resolve();
@@ -126,14 +126,13 @@ export function createKeystone(exp: Keystone): Promise<void> {
  * batches follow. A taken slug gets a numeric suffix (-2, -3…). Returns the token.
  */
 export function renameKeystone(slug: string): Promise<Keystone> {
-  return mutate((d) => {
+  return mutate(async (d) => {
     const exp = findKeystone(d, slug);
     if (!exp) throw new Error("Keystone not found");
     const base = slugify(exp.name);
     if (!base || base === exp.slug) return exp;
 
-    let next = base;
-    for (let n = 2; slugTaken(d, next, exp); n++) next = `${base.slice(0, 40 - `-${n}`.length)}-${n}`;
+    const next = await nextFreeSlug(base, (s) => slugTaken(d, s, exp));
     if (next === exp.slug) return exp;
 
     const old = exp.slug;
@@ -204,15 +203,13 @@ export function removeMember(slug: string, address: string) {
 
 // ── NTAG 424 DNA counters ──────────────────────────────────────
 
-export class ReplayError extends Error {}
-
 /**
  * Atomically accept a chip's tap counter only if it's higher than any seen
  * before, so each SUN URL works once. Throws ReplayError otherwise.
  */
-export function recordChipCounter(slug: string, uid: string, counter: number): Promise<void> {
+export function recordChipCounter(scope: string, uid: string, counter: number): Promise<void> {
   return mutate((d) => {
-    const key = `${slug}:${uid}`;
+    const key = `${scope}:${uid}`;
     const last = d.chipCounters[key];
     if (last !== undefined && counter <= last) throw new ReplayError("Tap link already used");
     d.chipCounters[key] = counter;
@@ -261,3 +258,42 @@ export function updateItemBatch(id: string, fn: (batch: ItemBatch) => void): Pro
     return b;
   });
 }
+
+// ── Claim locks ───────────────────────────────────────────────
+
+/** In memory: this store runs in one server process, so a map is enough. Lock key → expiry time. */
+const claimLocks = new Map<string, number>();
+
+export async function withClaimLock<T>(keys: string[], fn: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  if (keys.some((k) => (claimLocks.get(k) ?? 0) > now)) throw new ClaimBusyError("A claim for this item is already in progress");
+  for (const k of keys) claimLocks.set(k, now + CLAIM_LOCK_MS);
+  try {
+    return await fn();
+  } finally {
+    for (const k of keys) claimLocks.delete(k);
+  }
+}
+
+export const jsonStore: Store = {
+  listKeystones,
+  getKeystone,
+  canonicalSlug,
+  createKeystone,
+  renameKeystone,
+  updateKeystone,
+  listMembers,
+  findMember,
+  upsertMember,
+  setMemberRevoked,
+  removeMember,
+  recordChipCounter,
+  withClaimLock,
+  listOperators,
+  getOperator,
+  createOperator,
+  listItemBatches,
+  getItemBatch,
+  createItemBatch,
+  updateItemBatch,
+};

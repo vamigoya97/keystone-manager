@@ -60,9 +60,27 @@ other ports.
 | `TAP_SECRET` | HMAC key for static chip links |
 | `NTAG_MASTER_KEY` | Master key for NTAG 424 DNA chips (per-keystone keys are derived) |
 | `APP_URL` | Public base URL used in chip links |
+| `DATABASE_URL` | Postgres for the app's data (see below). Unset → `data/store.json` |
 
-Data (operators, keystones, members, chip counters) is kept in `data/store.json`. It's a single-server JSON
-store; swap `lib/store.ts` for a database before deploying to serverless.
+### Data
+
+Operators, keystones, members, item batches and chip counters go through `lib/store.ts`, which uses one of two
+stores with the same behavior (`lib/stores/types.ts`):
+
+- **Postgres** when `DATABASE_URL` is set (`lib/stores/postgres.ts`, tables in `lib/db/schema.ts`). Use this
+  for hosting; on Neon, use the pooled connection string.
+- **`data/store.json`** otherwise (`lib/stores/json.ts`). Fine for one long-running server, not for serverless.
+
+Mints run under a short claim lock per item and per wallet, so a double tap or two phones can't both mint.
+
+A local Postgres needs no install:
+
+```bash
+npm run db:local          # Postgres 17 on localhost:5433, data in data/postgres (Ctrl+C stops it)
+```
+
+Then set `DATABASE_URL=postgres://keystone:keystone@localhost:5433/keystone` in `.env.local` and copy your JSON
+data in with `npm run db:import`.
 
 ### Design lab (development only)
 
@@ -97,13 +115,19 @@ popovers mount inside it, so member screens keep their own look.
 | `npm run compile:pass` | Compile `contracts/KeystonePass.sol` into `lib/keystone-pass.json` |
 | `python3 scripts/generate-brand-assets.py [operator\|slug…]` | Rebuild keystone brand media in `brand-assets/` from each keystone's saved details |
 | `npx tsx scripts/apply-brand-assets.ts [operator\|slug…]` | Pin that media and apply it to the keystones |
+| `npm run db:local` | Run a local Postgres 17 (localhost:5433) for development and tests |
+| `npm run db:migrate` | Apply the migrations in `drizzle/` to `DATABASE_URL` |
+| `npm run db:import [-- file]` | Copy `data/store.json` (or `file`) into `DATABASE_URL`; safe to re-run, never deletes |
+| `npm run db:generate` | After changing `lib/db/schema.ts`: write a new migration into `drizzle/` |
+| `npm run test:store` | Store checks against the JSON store; add `TEST_DATABASE_URL=…/keystone_test` to include Postgres (**wipes that database**) |
 
 ## Project layout
 
 ```
 app/            pages (member + /operator) and API routes
 components/nfc  member UI       components/admin  operator console
-lib/            store, auth, chain, tap/NTAG 424, Pinata, theme
+lib/            store (+ stores/, db/), auth, chain, tap/NTAG 424, Pinata, theme
+drizzle/        Postgres migrations           test/  store tests
 contracts/      KeystonePass.sol
 docs/           user flows, diagrams, NFC hardware notes
 brand-assets/   generated operator media (see its README)
