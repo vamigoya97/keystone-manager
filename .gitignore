@@ -34,3 +34,5 @@ npm-debug.log*
 next-env.d.ts
 # operator store (keystones, members, chip counters)
 data/
+.vercel
+.env*
