@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { signIn } from "@/lib/signIn";
 import { useAuthedFetch } from "@/lib/useAccess";
 import ClaimShell, { NfcGlyph } from "./ClaimShell";
 import { usable, useKeystones } from "./member";
@@ -214,7 +215,7 @@ export default function ItemLanding({ batch, tap }: { batch: string; tap: TapPar
             onClick={() => {
               if (!authenticated) {
                 claimAfterLogin.current = true;
-                login();
+                signIn(login, "member");
               } else claimAll();
             }}
             className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15px] font-semibold tracking-wide text-surface transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-80"

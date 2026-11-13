@@ -52,8 +52,7 @@ other ports.
 | Variable | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET` | Privy auth (client + server token verification) |
-| `NEXT_PUBLIC_ENABLE_EMAIL_LOGIN` | `true` to offer email login alongside SMS |
-| `OPERATOR_PHONES`, `OPERATOR_EMAILS`, `OPERATOR_WALLETS` | Comma-separated operator allowlist for `/operator` |
+| `OPERATOR_EMAILS` | Comma-separated operator emails for `/operator`. Operators sign in by email only; keystone holders by SMS only (`lib/signIn.ts`) |
 | `PRIVATE_KEY` | Operator wallet: deploys keystone contracts and pays every mint |
 | `NEXT_PUBLIC_GATE_CHAIN_ID` | `84532` Base Sepolia (default) or `8453` Base |
 | `PINATA_JWT`, `NEXT_PUBLIC_PINATA_GATEWAY` | Private gallery files and public token art |

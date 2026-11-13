@@ -1,6 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
+import { signIn } from "@/lib/signIn";
 import { usable, useKeystones } from "./member";
 import { PlateHome } from "./plate";
 
@@ -15,7 +16,7 @@ export default function MemberHome() {
       state={!ready || (authenticated && keystones === null && !error) ? "loading" : !authenticated ? "signed-out" : "ready"}
       keystones={held}
       error={authenticated ? error : null}
-      onSignIn={login}
+      onSignIn={() => signIn(login, "member")}
       onSignOut={() => logout()}
     />
   );

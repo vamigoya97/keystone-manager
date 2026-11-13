@@ -11,8 +11,8 @@ sign-in, runs the scripts, reads contracts on chain, inspects `data/store.json` 
 
 | Need | Why |
 |---|---|
-| Two phone numbers (or one phone + one email with `NEXT_PUBLIC_ENABLE_EMAIL_LOGIN=true`) | Member A and member B, for "chip already used" and the Members tab |
-| An operator login in `OPERATOR_PHONES` / `OPERATOR_EMAILS` | Console access |
+| Two phone numbers | Member A and member B, for "chip already used" and the Members tab |
+| An operator email in `OPERATOR_EMAILS` | Console access |
 | Base Sepolia ETH on the operator wallet (`PRIVATE_KEY`) | Deploys and mints; ~0.02 ETH is plenty |
 | `TAP_SECRET`, `NTAG_MASTER_KEY`, `PINATA_JWT`, `NEXT_PUBLIC_PINATA_GATEWAY`, `APP_URL` set in `.env.local` | Chips, private gallery, links |
 | Optional: blank NTAG 213/215 and NTAG 424 DNA tags + NXP TagWriter / TagXplorer | Real taps (otherwise simulated with scripts) |

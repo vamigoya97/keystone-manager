@@ -86,7 +86,7 @@ keystones are ordered and labeled (*Upcoming*, *Live*, *Past*); every keystone u
 contract, NFC chip flow, gallery and Customize options.
 
 The console is organized by operator: pick one from the **operator dropdown** (which also has **+ New operator**), see its keystones as a **list** or as artwork **icons**, newest first (by creation date), and open one to manage it. Sign-in is a
-single operator allowlist for now (`OPERATOR_PHONES` / `OPERATOR_EMAILS` / `OPERATOR_WALLETS`); per-operator
+single operator allowlist for now (`OPERATOR_EMAILS`, email sign-in only); per-operator
 logins can be added later.
 
 ## 3. Operator console
@@ -95,7 +95,7 @@ logins can be added later.
 
 | Area | What operators do |
 |---|---|
-| Sign-in | Privy login checked against `OPERATOR_PHONES` / `OPERATOR_EMAILS` / `OPERATOR_WALLETS`. Others see "Not an operator" |
+| Sign-in | Privy login (email only) checked against `OPERATOR_EMAILS`. Others see "Not an operator" |
 | Operators | Row of operators (ay.llu, GOAT community, Sahar Camp, …) with keystone counts; **+ New operator** |
 | Keystones | For the selected operator: its keystones under **Upcoming & live**, **Ongoing** and **Past**, and **+ New keystone** (name, link, optional dates and location) |
 | Gas wallet | A dropdown in the top bar next to "Operator console": the button shows the balance (amber "Low" when it runs short, red if unreachable); it opens the chain, estimated mints remaining, copy address to fund, and the explorer link |
@@ -167,7 +167,7 @@ paid by the operator wallet, with an explorer link:
 | | Members | Operators |
 |---|---|---|
 | Entry | `/` (member home), `/x/<slug>`, chip taps | `/operator` |
-| Sign-in | Privy (SMS, wallet, optional email) | Privy, **and** on the server allowlist (`OPERATOR_PHONES` / `OPERATOR_WALLETS`) |
+| Sign-in | Privy: SMS for holders, email for operators | Privy, **and** on the server allowlist (`OPERATOR_EMAILS`) |
 | API | `/api/k/*`, `/api/me/*`, `/api/tap`, `/api/items` | `/api/admin/*` |
 
 The operator page shell is public, but it holds no data or secrets. Everything it shows or changes goes
@@ -185,7 +185,7 @@ either way.
 |---|---|
 | `PRIVATE_KEY` | Operator wallet that signs and pays for every mint and deploy |
 | `PRIVY_APP_SECRET` | Server-side verification of Privy sessions |
-| `OPERATOR_PHONES` / `OPERATOR_EMAILS` / `OPERATOR_WALLETS` | Who can open `/operator` |
+| `OPERATOR_EMAILS` | Who can open `/operator` |
 | `TAP_SECRET` | Signing chip URLs and claim cookies |
 | `PINATA_JWT` | Uploads (needs `org:files:write`) |
 | `NEXT_PUBLIC_PINATA_GATEWAY` | Dedicated gateway (`yourname.mypinata.cloud`), required for private files |

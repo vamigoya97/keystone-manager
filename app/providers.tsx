@@ -8,17 +8,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
       config={{
-        // Phone/SMS and wallet. Email can be switched on for testing
-        // (e.g. signing in as a non-operator) with NEXT_PUBLIC_ENABLE_EMAIL_LOGIN=true.
-        loginMethods:
-          process.env.NEXT_PUBLIC_ENABLE_EMAIL_LOGIN === "true"
-            ? ["sms", "email", "wallet"]
-            : ["sms", "wallet"],
+        // Both methods are allowed for the app; each sign-in button opens the modal with
+        // only its audience's method (lib/signIn.ts): SMS for holders, email for operators.
+        loginMethods: ["sms", "email"],
+        // Neutral and dark, like the member screens and the console. The finer palette,
+        // radii and typeface are CSS variables in app/globals.css (#privy-dialog).
         appearance: {
-          theme: "dark",
-          accentColor: "#C8FF2E",
+          theme: "#0c0c0b",
+          accentColor: "#f2f1ec",
+          landingHeader: "Sign in",
           showWalletLoginFirst: false,
-          logo: undefined,
+          walletList: [],
         },
         embeddedWallets: {
           createOnLogin: "users-without-wallets",

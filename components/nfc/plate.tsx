@@ -456,6 +456,7 @@ export function PlateClaim({
   phase,
   error,
   securing = false,
+  signedIn = false,
   onClaim,
   onEnter,
   contained = false,
@@ -469,6 +470,8 @@ export function PlateClaim({
   error?: string | null;
   /** Sign-in is open after the slide; shown as part of securing. */
   securing?: boolean;
+  /** Privy reported a successful sign-in: securing moves straight on to forging and the vault. */
+  signedIn?: boolean;
   onClaim?: () => void;
   onEnter?: () => void;
   contained?: boolean;
@@ -485,7 +488,8 @@ export function PlateClaim({
   const [ripple, setRipple] = useState(0);
   const t = resolveTheme(keystone).claim;
   // The four steps: i tap (verifying), ii slide to secure (ready), iii log in, iv forge and open the vault.
-  const vaulting = phase === "minting" || phase === "minted";
+  // Once Privy reports success the screen moves on at once: no lingering "Signing in…" while access is checked.
+  const vaulting = phase === "minting" || phase === "minted" || (securing && signedIn);
   const loggingIn = securing && !vaulting;
   const forging = loggingIn || phase === "minting";
   const forged = phase === "minted";

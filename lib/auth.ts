@@ -55,6 +55,8 @@ export async function getUser(req: Request): Promise<AuthedUser> {
     userId = (await privy().verifyAuthToken(token)).userId;
   } catch (err) {
     if (err instanceof AuthError) throw err;
+    // The reason stays in the server log (expired, wrong app, bad key); the member sees one message.
+    console.warn("Privy token verification failed:", (err as Error)?.message ?? err);
     throw new AuthError("Session expired — sign in again");
   }
 
@@ -70,24 +72,18 @@ export async function getUser(req: Request): Promise<AuthedUser> {
 }
 
 /**
- * Operators are listed in env (one shared allowlist for now; per-operator
- * logins come later):
- *   OPERATOR_WALLETS=0xabc…,0xdef…    (any linked wallet)
- *   OPERATOR_PHONES=+15551234567      (SMS login number, E.164)
- *   OPERATOR_EMAILS=ops@example.com   (email login)
+ * Operators sign in by email only (the console opens Privy with email alone,
+ * lib/signIn.ts), listed in env as one shared allowlist:
+ *   OPERATOR_EMAILS=ops@example.com,other@example.com
+ * Phone numbers and wallets never open the console: SMS sign-in is for keystone
+ * holders, and a SIM swap shouldn't reach contracts or the gas wallet.
  */
 export function isOperator(user: AuthedUser): boolean {
-  const list = (v?: string) =>
-    (v || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  const digits = (p: string) => p.replace(/[^\d+]/g, "");
-  const wallets = list(process.env.OPERATOR_WALLETS);
-  const phones = list(process.env.OPERATOR_PHONES).map(digits);
-  const emails = list(process.env.OPERATOR_EMAILS);
-  return (
-    user.wallets.some((w) => wallets.includes(w)) ||
-    (!!user.phone && phones.includes(digits(user.phone))) ||
-    (!!user.email && emails.includes(user.email))
-  );
+  const emails = (process.env.OPERATOR_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return !!user.email && emails.includes(user.email.toLowerCase());
 }
 
 export async function requireOperator(req: Request): Promise<AuthedUser> {

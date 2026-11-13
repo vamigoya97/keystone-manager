@@ -278,3 +278,68 @@ html, body {
   animation: plate-ripple 1.1s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
 }
 ::view-transition-group(*) { animation-duration: 0.6s; animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* ── Console: indeterminate progress while it opens after sign-in ── */
+@keyframes console-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+.console-progress { animation: console-progress 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .console-progress { animation: none; width: 100%; opacity: 0.4; }
+}
+
+/* ── Privy sign-in modal ──
+ * Neutral and dark like the member screens and the console, in the member typeface.
+ * Privy sets its variables on :root; these sit on the dialog itself, so they win.
+ * Base theme and accent: app/providers.tsx (appearance). */
+#privy-dialog,
+#privy-modal-content {
+  --privy-color-background: #0c0c0b;
+  --privy-color-background-2: #161615;
+  --privy-color-background-3: #1f1f1d;
+  --privy-color-foreground: #f2f1ec;
+  --privy-color-foreground-2: #b9b7b0;
+  --privy-color-foreground-3: #8a8882;
+  --privy-color-foreground-4: #3a3936;
+  --privy-color-foreground-accent: #0c0c0b;
+  --privy-color-accent: #f2f1ec;
+  --privy-color-accent-light: #ffffff;
+  --privy-color-accent-dark: #d9d7d0;
+  --privy-color-border-default: #2a2927;
+  --privy-color-border-interactive: #3a3936;
+  --privy-color-border-focus: #f2f1ec;
+  --privy-color-success: #a8d5a2;
+  --privy-color-error: #ff8a7a;
+  --privy-border-radius-xs: 4px;
+  --privy-border-radius-sm: 6px;
+  --privy-border-radius-md: 10px;
+  --privy-border-radius-mdlg: 12px;
+  --privy-border-radius-lg: 16px;
+  font-family: var(--font-plate), system-ui, sans-serif;
+}
+#privy-dialog * { font-family: inherit; }
+
+/* Holders sign in over the member screens: Plate paper and ink (lib/signIn.ts sets data-signin). */
+html[data-signin="member"] #privy-dialog,
+html[data-signin="member"] #privy-modal-content {
+  --privy-color-background: #f1f1ef;
+  --privy-color-background-2: #e5e5e2;
+  --privy-color-background-3: #dadad6;
+  --privy-color-foreground: #161616;
+  --privy-color-foreground-2: #44443f;
+  --privy-color-foreground-3: #66665f;
+  --privy-color-foreground-4: #cdcdc8;
+  --privy-color-foreground-accent: #f1f1ef;
+  --privy-color-accent: #161616;
+  --privy-color-accent-light: #2a2a28;
+  --privy-color-accent-dark: #000000;
+  --privy-color-border-default: #cdcdc8;
+  --privy-color-border-interactive: #b4b4ae;
+  --privy-color-border-focus: #161616;
+  --privy-color-success: #2f6b3a;
+  --privy-color-error: #9a3a2c;
+  --privy-color-icon-default: #161616;
+  --privy-color-icon-muted: #66665f;
+  --privy-color-icon-subtle: #8a8a83;
+}

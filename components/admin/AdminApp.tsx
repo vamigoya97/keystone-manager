@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { signIn } from "@/lib/signIn";
 import {
   slugify,
   type Keystone,
@@ -10,7 +11,7 @@ import {
   type Operator,
 } from "@/lib/keystones";
 import type { PassContent, PassMetadata } from "@/lib/passMetadata";
-import { ChevronDownIcon, CopyIcon, ExternalLinkIcon, Loader2Icon, LogOutIcon } from "lucide-react";
+import { CheckCircle2Icon, ChevronDownIcon, CopyIcon, ExternalLinkIcon, Loader2Icon, LogOutIcon, MailIcon } from "lucide-react";
 import { Button as UiButton } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -65,19 +66,13 @@ export default function AdminApp() {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const [gate, setGate] = useState<{ status?: number; message: string } | null>(null);
 
-  if (!ready) return <Centered><Spinner /></Centered>;
+  // Privy still starting: the sign-in card, quiet, so nothing jumps when it is ready.
+  if (!ready) return <Centered><SignInCard /></Centered>;
 
   if (!authenticated) {
     return (
       <Centered>
-        <div className="w-full max-w-sm text-center">
-          <Logo />
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight">Operator console</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Sign in with an operator phone number, email or wallet.</p>
-          <Button variant="primary" className="mt-8 h-12 w-full text-sm" onClick={login}>
-            Sign in
-          </Button>
-        </div>
+        <SignInCard onSignIn={() => signIn(login, "operator")} />
       </Centered>
     );
   }
@@ -105,7 +100,7 @@ export default function AdminApp() {
 
   return (
     <ConsoleRoot>
-      <OperatorConsole onSignOut={() => logout()} onGateError={setGate} />
+      <OperatorConsole onSignOut={() => logout()} onGateError={setGate} signedInAs={user?.email?.address} />
     </ConsoleRoot>
   );
 }
@@ -118,8 +113,11 @@ export default function AdminApp() {
 export function OperatorConsole({
   onSignOut,
   onGateError,
+  signedInAs,
 }: {
   onSignOut: () => void;
+  /** The operator's email, shown while the console opens. */
+  signedInAs?: string;
   /** The first load failed (not an operator, or the server is unreachable). */
   onGateError?: (error: { status?: number; message: string }) => void;
 }) {
@@ -211,7 +209,7 @@ export function OperatorConsole({
   );
 
   if (!operators) {
-    return <Centered>{gateError ? <Notice tone="bad">{gateError.message}</Notice> : <Spinner />}</Centered>;
+    return <Centered>{gateError ? <Notice tone="bad">{gateError.message}</Notice> : <Opening email={signedInAs} />}</Centered>;
   }
 
 
@@ -545,8 +543,53 @@ function Centered({ children }: { children: React.ReactNode }) {
   return <ConsoleRoot className="flex items-center justify-center px-5">{children}</ConsoleRoot>;
 }
 
-function Spinner() {
-  return <Loader2Icon className="size-6 animate-spin text-muted-foreground" />;
+/** Signed out: email sign-in only. Without onSignIn (Privy still starting) the button waits. */
+function SignInCard({ onSignIn }: { onSignIn?: () => void }) {
+  return (
+    <div className="w-full max-w-sm text-center">
+      <Logo />
+      <h1 className="mt-6 text-2xl font-semibold tracking-tight">Operator console</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Sign in with your operator email. We&apos;ll send you a code.</p>
+      <Button variant="primary" className="mt-8 h-12 w-full text-sm" disabled={!onSignIn} onClick={onSignIn}>
+        {onSignIn ? (
+          <>
+            <MailIcon />
+            Continue with email
+          </>
+        ) : (
+          <Loader2Icon className="animate-spin" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * After a successful sign-in, while the console checks operator access and loads
+ * keystones (one request): who is signed in, what is done, what is happening.
+ */
+function Opening({ email }: { email?: string }) {
+  return (
+    <div className="w-full max-w-sm" role="status" aria-live="polite">
+      <Logo />
+      <h1 className="mt-6 text-center text-xl font-semibold tracking-tight">Opening the console</h1>
+      <ol className="mt-8 space-y-3 rounded-xl border bg-card p-4 text-sm">
+        <li className="flex items-center gap-3">
+          <CheckCircle2Icon className="size-4 shrink-0 text-foreground" />
+          <span className="min-w-0 flex-1 truncate">
+            Signed in{email && <span className="text-muted-foreground"> as {email}</span>}
+          </span>
+        </li>
+        <li className="flex items-center gap-3">
+          <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+          <span>Checking access and loading keystones…</span>
+        </li>
+      </ol>
+      <div className="mt-4 h-0.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+        <div className="console-progress h-full w-1/3 rounded-full bg-foreground/60" />
+      </div>
+    </div>
+  );
 }
 
 function Logo({ small = false }: { small?: boolean }) {

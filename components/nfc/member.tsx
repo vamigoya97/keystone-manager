@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { signIn } from "@/lib/signIn";
 import type { KeystonePhase } from "@/lib/keystones";
 import { useAuthedFetch } from "@/lib/useAccess";
 import ClaimShell, { NfcGlyph } from "./ClaimShell";
@@ -146,7 +147,7 @@ export function MemberShell({
           <span className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       ) : !authenticated ? (
-        <SignedOut onSignIn={login} />
+        <SignedOut onSignIn={() => signIn(login, "member")} />
       ) : (
         <>
           {nav && <nav aria-label="Your keystones" className="rise mt-6 flex gap-1 rounded-2xl border border-border-subtle bg-surface-raised p-1">

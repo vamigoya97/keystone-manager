@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLogin } from "@privy-io/react-auth";
+import { signIn } from "@/lib/signIn";
 import type { PublicKeystone } from "@/lib/keystones";
 import { useAccess, useAuthedFetch } from "@/lib/useAccess";
 import { PlateClaim, type ClaimAccess, type MintPhase } from "./plate";
@@ -54,10 +55,18 @@ export default function TokenClaim({
   // Sign-in is part of the one slide: the screen shows "securing" while Privy is
   // open, and a closed or failed sign-in puts the slide back.
   const [signingIn, setSigningIn] = useState(false);
-  const { login } = useLogin({ onError: () => {
-    claimAfterLogin.current = false;
-    setSigningIn(false);
-  } });
+  // Privy reported success: the screen moves on to forging while access is checked.
+  const [signedIn, setSignedIn] = useState(false);
+  const { login } = useLogin({
+    onComplete: () => {
+      if (claimAfterLogin.current) setSignedIn(true);
+    },
+    onError: () => {
+      claimAfterLogin.current = false;
+      setSigningIn(false);
+      setSignedIn(false);
+    },
+  });
   const authedFetch = useAuthedFetch();
   const { status, error: accessError, refetch } = useAccess(slug);
 
@@ -135,7 +144,8 @@ export default function TokenClaim({
     if (status === "signed-out") {
       claimAfterLogin.current = true;
       setSigningIn(true);
-      login();
+      setSignedIn(false);
+      signIn(login, "member");
     } else {
       mint();
     }
@@ -148,6 +158,7 @@ export default function TokenClaim({
       access={access}
       phase={phase}
       securing={signingIn}
+      signedIn={signedIn}
       error={tapError || error || accessError}
       onClaim={onClaim}
       onEnter={() => router.push(galleryHref)}
