@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useLogin } from "@privy-io/react-auth";
+import { usePathname, useRouter } from "next/navigation";
+import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { signIn } from "@/lib/signIn";
 import type { PublicKeystone } from "@/lib/keystones";
 import { useAccess, useAuthedFetch } from "@/lib/useAccess";
-import { PlateClaim, type ClaimAccess, type MintPhase } from "./plate";
+import { PlateClaim, PlateVault, PlateViewer, type ClaimAccess, type MintPhase } from "./plate";
 
 export type TapParams = { c?: string; s?: string; picc_data?: string; cmac?: string };
 type TapResult = { ok: boolean; error: string | null };
@@ -50,10 +50,13 @@ export default function TokenClaim({
 }) {
   const { slug } = keystone;
   const router = useRouter();
+  const pathname = usePathname();
+  const { logout } = usePrivy();
+  const [open, setOpen] = useState<number | null>(null);
+  const enteredVault = useRef(false);
   const [access, setAccess] = useState<ClaimAccess>(tap ? "verifying" : source);
   const [tapError, setTapError] = useState<string | null>(null);
-  // Sign-in is part of the one slide: the screen shows "securing" while Privy is
-  // open, and a closed or failed sign-in puts the slide back.
+  // The screen shows "securing" while Privy is open. Closing sign-in enables the diamond again.
   const [signingIn, setSigningIn] = useState(false);
   // Privy reported success: the screen moves on to forging while access is checked.
   const [signedIn, setSignedIn] = useState(false);
@@ -68,14 +71,33 @@ export default function TokenClaim({
     },
   });
   const authedFetch = useAuthedFetch();
-  const { status, error: accessError, refetch } = useAccess(slug);
+  const { status, gallery: items, error: accessError, refetch, accessCheck } = useAccess(slug);
 
-  // Set when the member slides while signed out; the forge resumes after sign-in.
+  // Set when the member taps the diamond while signed out; the forge resumes after sign-in.
   const claimAfterLogin = useRef(false);
+  const [vaultCheck, setVaultCheck] = useState<number | null>(null);
   const [phase, setPhase] = useState<MintPhase>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const galleryHref = `/x/${slug}/gallery`;
+  const completed = phase === "minted";
+  const showVault = completed && status === "holder" && pathname === galleryHref;
+
+  useEffect(() => {
+    if (pathname === galleryHref && status !== "holder" && status !== "loading") router.replace(`/x/${slug}`);
+  }, [galleryHref, pathname, router, slug, status]);
+
+  useEffect(() => {
+    if (!completed || vaultCheck !== accessCheck || enteredVault.current || status === "loading") return;
+    enteredVault.current = true;
+    if (status === "holder") {
+      window.history.pushState(null, "", galleryHref);
+      window.scrollTo({ top: 0, behavior: "instant" });
+    } else {
+      // The regular vault route owns access checks and redirects on a failed check.
+      router.push(galleryHref);
+    }
+  }, [accessCheck, completed, galleryHref, router, status, vaultCheck]);
 
   // Opened by a chip: the claim page is already showing; unlock minting once the
   // chip checks out, then drop the tap query so a reload can't replay a single-use tap.
@@ -105,21 +127,14 @@ export default function TokenClaim({
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error || "Forge failed");
 
-      // Straight to the vault: one slide, no stop on a "forged" screen.
+      // Check vault access after minting.
       setPhase("minted");
-      refetch();
-      router.push(galleryHref);
+      setVaultCheck(refetch());
     } catch (e: any) {
       setError(e?.message || "Forge failed");
       setPhase("error");
     }
   }
-
-  // A tap by someone who already holds this keystone goes straight to the gated content.
-  const verified = access === "chip";
-  useEffect(() => {
-    if (verified && status === "holder" && phase === "idle") router.replace(galleryHref);
-  }, [verified, status, phase, router, galleryHref]);
 
   // Resume the claim once Privy login completes and the wallet is known.
   useEffect(() => {
@@ -151,12 +166,25 @@ export default function TokenClaim({
     }
   }
 
-  return (
+  return showVault ? (
+    <>
+      <PlateVault
+        keystone={keystone}
+        items={items}
+        animateGalleryEntrance
+        onOpen={setOpen}
+        onSignOut={() => logout().then(() => router.replace(`/x/${slug}`))}
+      />
+      {open !== null && items[open] && (
+        <PlateViewer items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)} logo={keystone.tokenImage} />
+      )}
+    </>
+  ) : (
     <PlateClaim
       keystone={keystone}
       status={status}
       access={access}
-      phase={phase}
+      phase={completed && status === "holder" && enteredVault.current ? "idle" : phase}
       securing={signingIn}
       signedIn={signedIn}
       error={tapError || error || accessError}

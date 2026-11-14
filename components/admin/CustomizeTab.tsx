@@ -18,22 +18,22 @@ import { Input } from "@/components/ui/input";
 /**
  * The claim screen's states as the preview shows them (the name is the
  * tooltip). i–iv are the four steps of a claim, numbered like their wording
- * fields: tap the keystone, slide to secure, log in, and the vault opens with
- * no second slide. v is a holder coming back.
+ * fields: tap the keystone, tap the diamond to secure, log in, and the vault opens with
+ * no second tap. v is a holder coming back.
  */
 type PreviewState = { id: string; numeral: string; name: string; status: AccessStatus; access: ClaimAccess; phase: MintPhase; securing?: boolean };
 const PREVIEW_STATES: PreviewState[] = [
   { id: "tap", numeral: "i", name: "Keystone tapped: aligning", status: "signed-out", access: "verifying", phase: "idle" },
-  { id: "slide", numeral: "ii", name: "Aligned: slide to secure", status: "signed-out", access: "chip", phase: "idle" },
+  { id: "slide", numeral: "ii", name: "Aligned: tap the diamond to secure", status: "signed-out", access: "chip", phase: "idle" },
   { id: "login", numeral: "iii", name: "Log in (only when signed out)", status: "signed-out", access: "chip", phase: "idle", securing: true },
   { id: "vault", numeral: "iv", name: "Forging, then the vault opens on its own", status: "not-holder", access: "chip", phase: "minting" },
-  { id: "holder", numeral: "v", name: "Holder returns: slide to enter", status: "holder", access: null, phase: "idle" },
+  { id: "holder", numeral: "v", name: "Holder returns: tap the diamond to enter", status: "holder", access: null, phase: "idle" },
 ];
 
-/** The four claim steps' slide-button wording, in order; each previews its step. */
+/** The four claim steps' claim control wording, in order; each previews its step. */
 const STEP_COPY = [
   { key: "aligning", label: "i · Tap keystone", preview: "tap", standard: "verifying", max: CLAIM_LIMITS.alertChars },
-  { key: "secure", label: "ii · Slide to secure", preview: "slide", standard: "claimButton", max: CLAIM_LIMITS.labelChars },
+  { key: "secure", label: "ii · Tap to secure", preview: "slide", standard: "claimButton", max: CLAIM_LIMITS.labelChars },
   { key: "login", label: "iii · Log in", preview: "login", standard: "login", max: CLAIM_LIMITS.labelChars },
   { key: "vault", label: "iv · Open the vault", preview: "vault", standard: "vault", max: CLAIM_LIMITS.labelChars },
 ] as const;
@@ -45,7 +45,7 @@ const own = (t: KeystoneTheme) => JSON.stringify(sanitizeTheme({ background: t.b
  * The member screens' background and wording: media and color behind the
  * artwork (and under the vault's description), how dark the media gets, the
  * text color, and the wording of the four claim steps and the not-aligned
- * message. A live phone preview shows each claim step; slide the button
+ * message. A live phone preview shows each claim step; tap the diamond
  * there to play log in and opening the vault.
  */
 export default function CustomizeTab({
@@ -59,7 +59,7 @@ export default function CustomizeTab({
   const api = useAdminApi();
   const [theme, setTheme] = useState<KeystoneTheme>(keystone.theme ?? {});
   const [previewId, setPreviewId] = useState("slide");
-  /** The slide demo: log in, then forging into the vault, then back to the chosen step. */
+  /** The claim demo: log in, then forging into the vault, then back to the chosen step. */
   const [playing, setPlaying] = useState<"login" | "minting" | "minted" | null>(null);
   const [replay, setReplay] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -133,7 +133,7 @@ export default function CustomizeTab({
               <RangeField label="Darken media" unit="%" value={style.dim} {...L.dim} onChange={(v) => setClaim("dim", v)} />
               <ColorInput
                 label="Text color"
-                hint="Vault description, attributes and the slide button; standard follows the background"
+                hint="Vault description, attributes and the diamond button; standard follows the background"
                 value={theme.claim?.text?.color}
                 fallback="#161616"
                 onChange={(v) => setClaim("text", { color: v })}
@@ -159,8 +159,8 @@ export default function CustomizeTab({
             <CopyInput label="Not aligned" placeholder={copy.failed} value={theme.claim?.alerts?.failed} onChange={(v) => setClaim("alerts", { failed: v })} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            The slide button's wording through a claim: i the keystone is tapped, ii one slide secures it, iii log in (skipped when already signed in), iv
-            the vault opens on its own, with no second slide. Select a field to preview its step. "Not aligned" is read out and shown on the corner icon. Leave
+            The diamond button's wording through a claim: i the keystone is tapped, ii one tap secures it, iii log in (skipped when already signed in), iv
+            the vault opens on its own, automatically. Select a field to preview its step. "Not aligned" is read out and shown beside the diamond. Leave
             a field empty to use the standard wording shown in grey.
           </p>
         </Panel>
@@ -206,7 +206,7 @@ export default function CustomizeTab({
               phase={playing && playing !== "login" ? playing : state.phase}
               securing={playing ? playing === "login" : state.securing}
               onClaim={() => {
-                // Demo the slide: log in, forging, the vault opening, then back to where it started.
+                // Demo the claim: log in, forging, the vault opening, then back to where it started.
                 const next = (p: typeof playing) => (q: typeof playing) => (q ? p : q);
                 setPlaying("login");
                 setTimeout(() => setPlaying(next("minting")), 1400);

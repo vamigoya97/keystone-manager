@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { GalleryItem, PublicKeystone } from "@/lib/keystones";
 import type { AccessStatus } from "@/lib/useAccess";
@@ -23,14 +22,14 @@ type ClaimCase = {
 };
 
 const CLAIM_CASES: ClaimCase[] = [
-  { id: "i", title: "i · Tap keystone", note: "Tapped: slide button greyed out, knob spinning while the chip is checked", status: "signed-out", access: "verifying", phase: "idle" },
-  { id: "ii", title: "ii · Slide to secure", note: "One slide does the rest: log in (when signed out), forge, then the vault", status: "signed-out", access: "chip", phase: "idle" },
+  { id: "i", title: "i · Tap keystone", note: "The rough diamond stays disabled while the chip is checked", status: "signed-out", access: "verifying", phase: "idle" },
+  { id: "ii", title: "ii · Tap to secure", note: "Tap the diamond to continue: log in (when signed out), forge, then the vault", status: "signed-out", access: "chip", phase: "idle" },
   { id: "iii", title: "iii · Log in", note: "Privy sign-in, only when signed out; forging follows on its own", status: "signed-out", access: "chip", phase: "idle", securing: true },
-  { id: "iv", title: "iv · Open the vault", note: "Forging, then the vault opens on its own: no second slide", status: "not-holder", access: "chip", phase: "minting" },
-  { id: "holder", title: "Holder returns", note: "Already holds it, without a fresh tap: slide to enter the vault", status: "holder", access: null, phase: "idle" },
-  { id: "failed", title: "Not aligned", note: "Slide button stays off; tap the item again", status: "signed-out", access: "failed", phase: "idle", error: "This keystone couldn't be aligned." },
-  { id: "no-tap", title: "No tap yet", note: "Slide button off until the item is tapped", status: "signed-out", access: null, phase: "idle" },
-  { id: "error", title: "Forge failed", note: "Slide again to retry", status: "not-holder", access: "chip", phase: "error", error: "The network is busy. Try again." },
+  { id: "iv", title: "iv · Open the vault", note: "Forging, then the vault opens on its own: no second tap", status: "not-holder", access: "chip", phase: "minting" },
+  { id: "holder", title: "Holder returns", note: "Already holds it, without a fresh tap: tap the diamond to enter the vault", status: "holder", access: null, phase: "idle" },
+  { id: "failed", title: "Not aligned", note: "The diamond stays disabled; tap the item again", status: "signed-out", access: "failed", phase: "idle", error: "This keystone couldn't be aligned." },
+  { id: "no-tap", title: "No tap yet", note: "The diamond stays disabled until the item is tapped", status: "signed-out", access: null, phase: "idle" },
+  { id: "error", title: "Forge failed", note: "Tap the diamond to retry", status: "not-holder", access: "chip", phase: "error", error: "The network is busy. Try again." },
 ];
 
 /**
@@ -49,7 +48,7 @@ export default function LabView({
   options: { slug: string; name: string }[];
   items: GalleryItem[];
   held: MemberKeystone[];
-  /** Show the claim motion set (developing artwork, holographic tilt, spring slider, ripple, morph into the vault). */
+  /** Show the claim motion set (film grain, artwork press, and ripple). */
   motion: boolean;
 }) {
   const router = useRouter();
@@ -155,26 +154,18 @@ function Phone({ title, note, children }: { title: string; note: string; childre
   );
 }
 
-/** One claim state. Sliding plays the flow: log in (when signed out), forging, then the vault, with no second slide. */
+/** One claim state. Tapping the diamond plays the flow: log in (when signed out), forging, then the vault, automatically. */
 function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; c: ClaimCase; items: GalleryItem[]; motion: boolean }) {
   const [phase, setPhase] = useState<MintPhase>(c.phase);
   const [access, setAccess] = useState(c.access);
-  const morphName = motion ? `art-${c.id}` : undefined;
 
-  // With the motion set, the aligning phone loops checking → aligned so the artwork can be seen developing.
+  // With the motion set, the aligning phone loops checking → aligned to preview the alignment reveal.
   useEffect(() => {
     if (!motion || c.id !== "i") return;
     const id = setInterval(() => setAccess((a) => (a === "verifying" ? "chip" : "verifying")), 3200);
     return () => clearInterval(id);
   }, [motion, c.id]);
 
-  /** Into the vault; with the motion set, the artwork travels into it (View Transitions, where supported). */
-  function enterVault() {
-    const show = () => flushSync(() => setInVault(true));
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (motion && doc.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) doc.startViewTransition(show);
-    else show();
-  }
   const [signIn, setSignIn] = useState(false);
   const [inVault, setInVault] = useState(false);
   const [run, setRun] = useState(0);
@@ -188,7 +179,7 @@ function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; 
 
   function finishSecuring() {
     setPhase("minting");
-    setTimeout(enterVault, 1500);
+    setTimeout(() => setInVault(true), 1500);
     setTimeout(reset, 5000);
   }
 
@@ -197,7 +188,7 @@ function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; 
       <PhonePreview>
         <div key={run} className="h-full overflow-y-auto">
           {inVault ? (
-            <PlateVault keystone={keystone} items={items} onOpen={() => {}} contained morphName={morphName} />
+            <PlateVault keystone={keystone} items={items} onOpen={() => {}} contained animateGalleryEntrance />
           ) : (
             <PlateClaim
               keystone={keystone}
@@ -208,12 +199,11 @@ function ClaimPhone({ keystone, c, items, motion }: { keystone: PublicKeystone; 
               error={c.error}
               onClaim={() => (c.status === "signed-out" ? setSignIn(true) : finishSecuring())}
               onEnter={() => {
-                enterVault();
+                setInVault(true);
                 setTimeout(reset, 3500);
               }}
               contained
               motion={motion}
-              morphName={morphName}
             />
           )}
         </div>

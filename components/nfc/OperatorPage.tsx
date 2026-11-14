@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Empty, KeystoneRow, LoadingRows, MemberShell, SectionHeader, groupOperators, useKeystones } from "./member";
+import { Empty, KeystoneRow, LoadingRows, MemberShell, PageTitle, SectionHeader, groupOperators, useKeystones } from "./member";
 
 export default function OperatorPage({ operatorId }: { operatorId: string }) {
   return <MemberShell title="Operator">{() => <OperatorKeystones operatorId={operatorId} />}</MemberShell>;
@@ -20,32 +20,30 @@ function OperatorKeystones({ operatorId }: { operatorId: string }) {
     : [];
 
   return (
-    <section className="rise mt-8 space-y-8" style={{ animationDelay: "80ms" }}>
-      <Link href="/operators" className="text-[11px] uppercase tracking-[0.3em] text-text-secondary hover:text-text-primary hover:no-underline">
+    <section className="space-y-8 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))] pt-6">
+      <Link href="/operators" className="block px-5 text-[13px] text-[var(--p-slate)] underline-offset-4 hover:text-[var(--p-ink)] hover:underline">
         ← Operators
       </Link>
 
       {error ? (
-        <p className="text-sm text-rose">{error}</p>
+        <p className="px-5 text-[15px] leading-[1.6] text-[var(--p-alert)]">{error}</p>
       ) : keystones === null ? (
         <LoadingRows count={3} />
       ) : !group ? (
-        <Empty title="No keystones here yet" body="Tap one of this operator's items to secure a keystone." />
+        <Empty title="No keystones here yet" body="Hold your phone to one of this operator's items to secure a keystone." />
       ) : (
         <>
-          <div>
-            <h1 className="text-[28px] font-semibold leading-tight tracking-tight">{group.operator.name}</h1>
-            <p className="mt-1 text-sm text-text-secondary">
-              {group.active.length} keystone{group.active.length === 1 ? "" : "s"} you hold
-            </p>
-          </div>
+          <PageTitle
+            title={group.operator.name}
+            body={`${group.active.length} keystone${group.active.length === 1 ? "" : "s"} you hold`}
+          />
 
           {sections.map(
             ([title, items]) =>
               items.length > 0 && (
                 <div key={title}>
                   <SectionHeader title={title} count={items.length} />
-                  <div className="space-y-3">
+                  <div className="flex flex-col gap-[2px]">
                     {items.map((k) => (
                       <KeystoneRow key={k.slug} keystone={k} />
                     ))}

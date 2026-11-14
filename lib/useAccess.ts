@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import type { GalleryItem } from "@/lib/keystones";
 
@@ -33,7 +33,13 @@ export function useAccess(slug: string) {
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
-  const refetch = useCallback(() => setTick((t) => t + 1), []);
+  const request = useRef(0);
+  const [accessCheck, setAccessCheck] = useState(0);
+  const refetch = useCallback(() => {
+    const check = ++request.current;
+    setTick(check);
+    return check;
+  }, []);
 
   useEffect(() => {
     if (!ready) return setStatus("loading");
@@ -50,6 +56,7 @@ export function useAccess(slug: string) {
           error?: string;
         };
         if (cancelled) return;
+        setAccessCheck(tick);
         if (!res.ok) {
           setError(data.error ?? "Could not check access");
           return setStatus("not-holder");
@@ -60,6 +67,7 @@ export function useAccess(slug: string) {
       })
       .catch(() => {
         if (!cancelled) {
+          setAccessCheck(tick);
           setError("Network error");
           setStatus("not-holder");
         }
@@ -69,5 +77,5 @@ export function useAccess(slug: string) {
     };
   }, [ready, authenticated, slug, authedFetch, tick]);
 
-  return { status, gallery, error, refetch };
+  return { status, gallery, error, refetch, accessCheck };
 }

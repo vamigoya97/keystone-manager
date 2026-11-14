@@ -26,10 +26,10 @@ export const CLAIM_LIMITS = {
 };
 
 /**
- * Standard wording for the claim's four steps, each shown on the slide button:
- * i tap the keystone (the chip is read: aligning), ii slide to secure, iii log
+ * Standard wording for the claim's four steps, each shown on the diamond button:
+ * i tap the keystone (the chip is read: aligning), ii tap the diamond to secure, iii log
  * in (only when signed out), iv the keystone is forged and the vault opens on
- * its own, with no second slide.
+ * its own, automatically.
  */
 const DEFAULT_COPY = {
   aligning: "Aligning keystone…",
@@ -72,8 +72,8 @@ export function resolveTheme(exp: Named) {
       failed: DEFAULT_COPY.failed,
       /** The operator's own "not aligned" message, shown instead of the server's reason. */
       failedCustom: alerts.failed,
-      // The slide button through the four steps: i verifying (above), then these three.
-      /** ii Aligned: one slide does the rest. */
+      // The diamond control through the four steps: i verifying (above), then these three.
+      /** ii Aligned: tap the diamond to secure. */
       claimButton: alerts.secure || DEFAULT_COPY.secure,
       /** iii While Privy sign-in is open (skipped when already signed in). */
       login: alerts.login || DEFAULT_COPY.login,

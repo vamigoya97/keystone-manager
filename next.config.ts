@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withMotionStudio } from "motion-studio/next";
 
 const dev = process.env.NODE_ENV !== "production";
 
@@ -54,19 +55,18 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Tilt (holographic artwork) needs motion sensors on this site; nothing needs camera, mic or location.
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), accelerometer=(self), gyroscope=(self)",
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), accelerometer=(), gyroscope=()",
   },
   ...(dev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }]),
 ];
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-};
+} satisfies NextConfig;
 
-export default nextConfig;
+export default withMotionStudio(nextConfig);

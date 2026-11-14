@@ -8,7 +8,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { signIn } from "@/lib/signIn";
 import type { KeystonePhase } from "@/lib/keystones";
 import { useAuthedFetch } from "@/lib/useAccess";
-import ClaimShell, { NfcGlyph } from "./ClaimShell";
+import { PLATE } from "./plate";
 
 /**
  * Member area: the home overview (/), operators (/operators) and one
@@ -106,14 +106,15 @@ export function groupOperators(keystones: MemberKeystone[]): OperatorGroup[] {
     .sort((a, b) => b.active.length - a.active.length || a.operator.name.localeCompare(b.operator.name));
 }
 
-const SHELL = { palette: ["#C8FF2E", "#2EE6FF"] as [string, string] };
+/** Plate surfaces, the same as the member home (components/nfc/plate.tsx). */
+const page = "bg-[var(--p-page)] text-[var(--p-ink)] [font-family:var(--font-plate),system-ui,sans-serif] antialiased";
 
 const TABS = [
   { href: "/", label: "Home" },
   { href: "/operators", label: "Operators" },
 ];
 
-/** Frame for every member page: header, tabs, and the signed-out/loading states. */
+/** Frame for the member area pages: header, tabs, and the signed-out/loading states. */
 export function MemberShell({
   title,
   nav = true,
@@ -129,91 +130,96 @@ export function MemberShell({
   const who = user?.phone?.number || user?.email?.address;
 
   return (
-    <ClaimShell keystone={SHELL}>
-      <header className="rise flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.3em] text-text-secondary">{title}</span>
-        {authenticated && (
-          <button
-            onClick={() => logout()}
-            className="rounded-full px-3 py-1.5 text-[11px] text-text-muted hover:bg-surface-raised hover:text-text-secondary"
-          >
-            Sign out
-          </button>
-        )}
-      </header>
+    <div className={`flex min-h-[100dvh] flex-col ${page}`} style={PLATE}>
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
+        <header className="flex items-baseline justify-between px-5 pb-4 pt-[max(20px,calc(env(safe-area-inset-top)+12px))]">
+          <span className="text-[17px] font-semibold tracking-[-0.01em]">{title}</span>
+          {authenticated && (
+            <button onClick={() => logout()} className="text-[13px] text-[var(--p-slate)] underline-offset-4 hover:underline">
+              Sign out
+            </button>
+          )}
+        </header>
 
-      {!ready ? (
-        <div className="flex flex-1 items-center justify-center">
-          <span className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </div>
-      ) : !authenticated ? (
-        <SignedOut onSignIn={() => signIn(login, "member")} />
-      ) : (
-        <>
-          {nav && <nav aria-label="Your keystones" className="rise mt-6 flex gap-1 rounded-2xl border border-border-subtle bg-surface-raised p-1">
-            {TABS.map((t) => {
-              const active = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href) || (t.href === "/operators" && pathname.startsWith("/o/"));
-              return (
-                <Link
-                  key={t.href}
-                  href={t.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex-1 rounded-xl py-2 text-center text-[13px] transition-colors hover:no-underline ${
-                    active ? "bg-surface-elevated font-medium text-text-primary" : "text-text-secondary hover:text-text-primary"
-                  }`}
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
-          </nav>}
-          {children({ who })}
-        </>
-      )}
-    </ClaimShell>
+        {!ready ? (
+          <div className="flex flex-1 items-center justify-center" role="status">
+            <PlateSpinner />
+            <span className="sr-only">Loading</span>
+          </div>
+        ) : !authenticated ? (
+          <SignedOut onSignIn={() => signIn(login, "member")} />
+        ) : (
+          <>
+            {nav && (
+              <nav aria-label="Your keystones" className="flex gap-6 border-b border-[var(--p-rule)] px-5">
+                {TABS.map((t) => {
+                  const active =
+                    t.href === "/" ? pathname === "/" : pathname.startsWith(t.href) || (t.href === "/operators" && pathname.startsWith("/o/"));
+                  return (
+                    <Link
+                      key={t.href}
+                      href={t.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`-mb-px border-b py-3 text-[15px] hover:no-underline ${
+                        active ? "border-[var(--p-ink)] font-medium text-[var(--p-ink)]" : "border-transparent text-[var(--p-slate)] hover:text-[var(--p-ink)]"
+                      }`}
+                    >
+                      {t.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+            {children({ who })}
+          </>
+        )}
+      </div>
+    </div>
   );
+}
+
+/** The Plate spinner: a thin slate ring, like the slide button's knob while it works. */
+export function PlateSpinner({ className = "h-5 w-5" }: { className?: string }) {
+  return <span aria-hidden className={`${className} animate-spin rounded-full border-[1.8px] border-[var(--p-slate)] border-t-transparent`} />;
 }
 
 function SignedOut({ onSignIn }: { onSignIn: () => void }) {
   return (
-    <>
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="rise relative mb-10 flex h-24 w-24 items-center justify-center">
-          <span className="tap-ring" />
-          <span className="tap-ring" />
-          <div className="glass-elevated relative flex h-24 w-24 items-center justify-center rounded-full text-accent">
-            <NfcGlyph className="h-10 w-10" />
-          </div>
-        </div>
-        <h1 className="rise text-[28px] font-semibold leading-tight tracking-tight" style={{ animationDelay: "80ms" }}>
-          Tap your item to begin
-        </h1>
-        <p className="rise mt-3 max-w-xs text-sm leading-relaxed text-text-secondary" style={{ animationDelay: "160ms" }}>
-          Hold your phone near the item to secure your free keystone. Already a member? Sign in to see your
-          keystones.
-        </p>
-      </div>
+    <div className="mt-auto px-5 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
+      <p className="mb-2 text-[28px] font-semibold leading-[1.1] tracking-[-0.02em]">Hold your phone to your item.</p>
+      <p className="mb-8 max-w-[34ch] text-[15px] leading-[1.6] text-[var(--p-slate)]">
+        That secures its keystone. If you already hold one, sign in to see it.
+      </p>
       <button
         onClick={onSignIn}
-        className="rise h-14 w-full rounded-2xl bg-accent text-[15px] font-semibold tracking-wide text-surface transition-all hover:brightness-110 active:scale-[0.98]"
-        style={{ animationDelay: "240ms" }}
+        className="h-12 w-full rounded-md bg-[var(--p-ink)] text-[15px] font-medium text-[var(--p-on-ink)] focus-visible:outline-offset-2 active:opacity-85"
       >
         Sign in
       </button>
-    </>
+    </div>
+  );
+}
+
+/** Page title for a member section. */
+export function PageTitle({ title, body }: { title: string; body?: string }) {
+  return (
+    <div className="px-5">
+      <h1 className="text-[28px] font-semibold leading-[1.1] tracking-[-0.02em]">{title}</h1>
+      {body && <p className="mt-2 text-[15px] leading-[1.6] text-[var(--p-slate)]">{body}</p>}
+    </div>
   );
 }
 
 export function SectionHeader({ title, count, href }: { title: string; count?: number; href?: string }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between">
-      <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-text-secondary">
+    <div className="mb-2 flex items-baseline justify-between px-5">
+      <h2 className="text-[13px] font-medium text-[var(--p-slate)]">
         {title}
-        {count !== undefined && <span className="ml-2 font-normal text-text-muted">{count}</span>}
+        {count !== undefined && <span className="ml-2 tabular-nums">{count}</span>}
       </h2>
       {href && (
-        <Link href={href} className="text-[12px] text-accent hover:no-underline">
-          See all →
+        <Link href={href} className="text-[13px] text-[var(--p-ink)] underline-offset-4 hover:underline">
+          See all
         </Link>
       )}
     </div>
@@ -222,41 +228,37 @@ export function SectionHeader({ title, count, href }: { title: string; count?: n
 
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border-default px-6 py-8 text-center">
-      <NfcGlyph className="mx-auto h-7 w-7 text-accent" />
-      <p className="mt-3 text-[15px] font-medium">{title}</p>
-      <p className="mt-1 text-[13px] text-text-secondary">{body}</p>
+    <div className="px-5 pt-8">
+      <p className="text-[15px] font-medium">{title}</p>
+      <p className="mt-1 text-[15px] leading-[1.6] text-[var(--p-slate)]">{body}</p>
     </div>
   );
 }
 
+/** Loading rows: flat raised tiles in the shape of the rows to come, no shimmer. */
 export function LoadingRows({ count = 2 }: { count?: number }) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-[2px]" aria-busy>
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="h-[84px] animate-pulse rounded-2xl bg-surface-raised" />
+        <div key={i} className="h-[80px] bg-[var(--p-raised)]" />
       ))}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: KeystoneStatus }) {
-  if (status === "revoked") {
-    return <span className="shrink-0 rounded-full bg-rose-dim px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-rose">Revoked</span>;
-  }
-  if (status === "not-held") {
-    return (
-      <span className="shrink-0 rounded-full bg-surface-elevated px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-text-muted">
-        No longer held
-      </span>
-    );
-  }
-  return <span className="shrink-0 text-[13px] text-accent">Open →</span>;
+function StatusLabel({ status }: { status: KeystoneStatus }) {
+  if (status === "revoked") return <span className="shrink-0 text-[13px] text-[var(--p-alert)]">Revoked</span>;
+  if (status === "not-held") return <span className="shrink-0 text-[13px] text-[var(--p-slate)]">No longer held</span>;
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[var(--p-slate)]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  );
 }
 
 function PhaseTag({ phase }: { phase: KeystonePhase | null }) {
-  if (phase === "live") return <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-surface">Live</span>;
-  if (phase === "upcoming") return <span className="shrink-0 rounded-full bg-accent-dim px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] text-accent">Upcoming</span>;
+  if (phase === "live") return <span className="shrink-0 rounded-sm bg-[var(--p-ink)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--p-on-ink)]">Live</span>;
+  if (phase === "upcoming") return <span className="shrink-0 rounded-sm border border-[var(--p-rule)] px-1.5 py-0.5 text-[11px] text-[var(--p-slate)]">Upcoming</span>;
   return null;
 }
 
@@ -286,10 +288,7 @@ export function KeystoneRow({
 
   const body = (
     <>
-      <div
-        className={`${compact ? "h-10 w-10 rounded-lg" : "h-14 w-14 rounded-xl"} shrink-0 overflow-hidden border border-white/10`}
-        style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}
-      >
+      <div className={`${compact ? "h-10 w-10" : "h-14 w-14"} shrink-0 overflow-hidden`} style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}>
         {k.tokenImage && <img src={k.tokenImage} alt="" className="h-full w-full object-cover" />}
       </div>
       <div className="min-w-0 flex-1">
@@ -297,22 +296,22 @@ export function KeystoneRow({
           <span className={`truncate font-semibold ${compact ? "text-[14px]" : "text-[15px]"}`}>{k.name}</span>
           <PhaseTag phase={k.phase} />
           {status === "received" && (
-            <span className="shrink-0 rounded-full bg-accent-dim px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] text-accent">Received</span>
+            <span className="shrink-0 rounded-sm border border-[var(--p-rule)] px-1.5 py-0.5 text-[11px] text-[var(--p-slate)]">Received</span>
           )}
         </div>
-        <div className="mt-0.5 truncate text-[12px] text-text-secondary">{line}</div>
+        <div className="mt-0.5 truncate text-[13px] text-[var(--p-slate)]">{line}</div>
       </div>
-      <StatusBadge status={status} />
+      <StatusLabel status={status} />
     </>
   );
 
-  const cls = `flex items-center gap-4 rounded-2xl border border-border-subtle bg-surface-raised ${compact ? "p-2.5" : "p-3.5"}`;
+  const cls = `flex items-center gap-4 bg-[var(--p-raised)] px-5 ${compact ? "py-2.5" : "py-3"}`;
   if (status === "revoked") return <div className={`${cls} opacity-60`}>{body}</div>;
   return (
     <Link
       // Keystones they no longer hold go to the claim page rather than a gallery that would bounce them.
       href={canOpen ? `/x/${k.slug}/gallery` : `/x/${k.slug}`}
-      className={`${cls} transition-colors hover:border-accent/40 hover:no-underline ${canOpen ? "" : "opacity-70"}`}
+      className={`${cls} text-[var(--p-ink)] hover:no-underline focus-visible:outline-offset-[-2px] ${canOpen ? "" : "opacity-70"}`}
     >
       {body}
     </Link>
@@ -325,42 +324,34 @@ export function OperatorCard({ group }: { group: OperatorGroup }) {
   const [a, b] = lead.palette;
   const n = group.active.length;
   const upcoming = group.time.soon.find(usable);
+  const names = group.keystones.slice(0, 4).map((k) => k.name);
+  const more = group.keystones.length - names.length;
 
   return (
     <Link
       href={`/o/${group.operator.id}`}
-      className={`block overflow-hidden rounded-3xl border border-border-subtle bg-surface-raised transition-colors hover:border-accent/40 hover:no-underline ${
-        n ? "" : "opacity-60"
-      }`}
+      className={`flex items-center gap-4 bg-[var(--p-raised)] px-5 py-4 text-[var(--p-ink)] hover:no-underline focus-visible:outline-offset-[-2px] ${n ? "" : "opacity-60"}`}
     >
-      <div className="flex items-center gap-4 p-4" style={{ background: `linear-gradient(135deg, ${a}2e, ${b}1f)` }}>
-        <span
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 text-[20px] font-bold text-white"
-          style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}
-        >
-          {group.operator.name.replace(/[^a-z0-9]/gi, "").charAt(0).toUpperCase() || "•"}
+      <span
+        className="flex h-14 w-14 shrink-0 items-center justify-center text-[20px] font-semibold text-white"
+        style={{ background: `linear-gradient(135deg, ${a}, ${b})` }}
+      >
+        {group.operator.name.replace(/[^a-z0-9]/gi, "").charAt(0).toUpperCase() || "•"}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-semibold">{group.operator.name}</span>
+        <span className="block truncate text-[13px] text-[var(--p-slate)]">
+          {n ? `${n} keystone${n === 1 ? "" : "s"}` : "No keystones held"}
+          {upcoming ? ` · Next: ${upcoming.dateLabel ?? upcoming.name}` : ""}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[17px] font-semibold text-text-primary">{group.operator.name}</span>
-          <span className="block truncate text-[12px] text-text-secondary">
-            {n ? `${n} keystone${n === 1 ? "" : "s"}` : "No keystones held"}
-          </span>
+        <span className="mt-1 block truncate text-[13px] text-[var(--p-slate)]">
+          {names.join(" · ")}
+          {more > 0 ? ` · +${more}` : ""}
         </span>
-        <span className="shrink-0 text-[13px] text-accent">→</span>
-      </div>
-      <div className="flex flex-wrap gap-1.5 border-t border-border-subtle px-4 py-3">
-        {group.keystones.slice(0, 4).map((k) => (
-          <span key={k.slug} className="max-w-full truncate rounded-full bg-surface-elevated px-2.5 py-1 text-[11px] text-text-secondary">
-            {k.name}
-          </span>
-        ))}
-        {group.keystones.length > 4 && <span className="px-1 py-1 text-[11px] text-text-muted">+{group.keystones.length - 4}</span>}
-        {upcoming && (
-          <span className="ml-auto rounded-full bg-accent-dim px-2.5 py-1 text-[11px] text-accent">
-            Next: {upcoming.dateLabel ?? upcoming.name}
-          </span>
-        )}
-      </div>
+      </span>
+      <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[var(--p-slate)]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M9 5l7 7-7 7" />
+      </svg>
     </Link>
   );
 }
