@@ -923,6 +923,39 @@ function Wave({ className = "" }: { className?: string }) {
 const TILE_SHADOW = "shadow-[0_1px_2px_rgba(0,0,0,0.08),0_6px_16px_-4px_rgba(0,0,0,0.14)]";
 
 /**
+ * One keystone on the member home, at its artwork's own shape. Until the image
+ * loads it holds a 4:5 frame (the usual keystone shape), so there's never an
+ * empty, zero-height tile showing only its shadow.
+ */
+function HomeTile({ keystone: k }: { keystone: MemberKeystone }) {
+  const [ratio, setRatio] = useState<number | null>(null);
+  return (
+    <Link
+      href={`/x/${k.slug}/gallery`}
+      title={k.name}
+      aria-label={k.name}
+      className={`block overflow-hidden focus-visible:outline-offset-2 ${TILE_SHADOW}`}
+      style={{
+        aspectRatio: k.tokenImage ? (ratio ?? 4 / 5) : 1,
+        background: `linear-gradient(135deg, ${k.palette[0]}, ${k.palette[1]})`,
+      }}
+    >
+      {k.tokenImage && (
+        <img
+          src={k.tokenImage}
+          alt=""
+          className="block h-full w-full object-cover"
+          onLoad={(e) => {
+            const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+            if (w && h) setRatio(w / h);
+          }}
+        />
+      )}
+    </Link>
+  );
+}
+
+/**
  * The member home: claimed keystones at their artwork's own shape, two
  * columns with space around them, each lifted by a soft shadow. Each opens its
  * vault. Signed out, one sentence and Sign in.
@@ -958,9 +991,13 @@ export function PlateHome({
         ) : error ? (
           <p className="px-5 pt-16 text-[15px] leading-[1.6] text-[var(--p-alert)]">{error}</p>
         ) : state === "loading" ? (
-          <div className="columns-2 gap-4 px-4 pb-10" aria-busy>
-            {[4 / 5, 1, 1, 3 / 4].map((r, i) => (
-              <div key={i} className="mb-4 bg-[var(--p-raised)]" style={{ aspectRatio: r }} />
+          <div className="grid grid-cols-2 items-start gap-4 px-4 pb-10" aria-busy>
+            {[0, 1].map((col) => (
+              <div key={col} className="flex flex-col gap-4">
+                {[0, 1].map((i) => (
+                  <div key={i} className="aspect-[4/5] bg-[var(--p-raised)]" />
+                ))}
+              </div>
             ))}
           </div>
         ) : keystones.length === 0 ? (
@@ -968,26 +1005,24 @@ export function PlateHome({
             Nothing here yet. Hold your phone to an item to secure its keystone.
           </p>
         ) : (
-          // Masonry columns, so each artwork keeps its own proportions.
-          <div className="columns-2 gap-4 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
-            {keystones.map((k, index) => (
-              <motion.div
-                key={k.slug}
-                className="mb-4 break-inside-avoid"
-                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
-              >
-                <Link
-                  href={`/x/${k.slug}/gallery`}
-                  title={k.name}
-                  aria-label={k.name}
-                  className={`block overflow-hidden focus-visible:outline-offset-2 ${TILE_SHADOW} ${k.tokenImage ? "" : "aspect-square"}`}
-                  style={{ background: `linear-gradient(135deg, ${k.palette[0]}, ${k.palette[1]})` }}
-                >
-                  {k.tokenImage && <img src={k.tokenImage} alt="" loading="lazy" className="block h-auto w-full" />}
-                </Link>
-              </motion.div>
+          // Two stacks, alternating left and right, so each artwork keeps its own
+          // proportions. (CSS columns split tiles across columns in Safari.)
+          <div className="grid grid-cols-2 items-start gap-4 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
+            {[0, 1].map((col) => (
+              <div key={col} className="flex flex-col gap-4">
+                {keystones.map((k, index) =>
+                  index % 2 === col ? (
+                    <motion.div
+                      key={k.slug}
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
+                    >
+                      <HomeTile keystone={k} />
+                    </motion.div>
+                  ) : null,
+                )}
+              </div>
             ))}
           </div>
         )}
