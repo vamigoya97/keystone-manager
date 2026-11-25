@@ -190,3 +190,13 @@ either way.
 | `PINATA_JWT` | Uploads (needs `org:files:write`) |
 | `NEXT_PUBLIC_PINATA_GATEWAY` | Dedicated gateway (`yourname.mypinata.cloud`), required for private files |
 | `APP_URL` | Optional. Public origin for chip links and `external_url` behind a proxy |
+
+### Operator-specific member lists
+
+- `/` opens `/operators` when the holder has usable keystones from multiple operators. Single-operator holders see their own operator's list directly.
+- `/operators` lists only operators linked to usable holdings (active, transferred-in, or temporarily unknown chain status). Round icons open `/o/<id>`.
+- `/o/<id>` shows only that operator's usable keystones in the My Keystones artwork grid. A top-right back arrow appears for holders linked to multiple operators. The vault's My Keystones button returns to its issuing operator.
+- Console → select operator → **Operator appearance**: upload/remove the round icon and the My Keystones background, then **Save appearance**. Images, animated GIFs, and muted looping MP4/WebM backgrounds use public IPFS, independently of private gallery media.
+- Shared Operators-page artwork is configured separately with server environment variables `OPERATORS_BACKGROUND_URL` and `OPERATORS_BACKGROUND_KIND` (`image` or `video`). Until supplied, the page uses the standard Plate background.
+- Postgres requires the new appearance migration (`npm run db:migrate`) before deploying these changes. JSON stores accept the optional appearance fields without a migration.
+- `/lab/operators` previews the real views with sample holdings in development only; it is unavailable in production.

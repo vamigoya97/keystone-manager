@@ -22,6 +22,13 @@ export interface Operator {
   id: string;
   name: string;
   createdAt: string;
+  appearance?: OperatorAppearance;
+}
+
+/** Public artwork for the operator picker and their member keystone list. */
+export interface OperatorAppearance {
+  icon?: ThemeMedia;
+  background?: ThemeMedia;
 }
 
 export const OPERATOR_ID_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;

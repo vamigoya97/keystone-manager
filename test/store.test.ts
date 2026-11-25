@@ -57,6 +57,21 @@ function suite(name: string, getStore: () => Promise<Store>, cleanup: () => Prom
       await assert.rejects(s.createOperator({ id: "t-op", name: "x", createdAt: "2026-11-01T10:00:00.000Z" }), /already exists/);
     });
 
+    test("operator appearance: round-trip, preserve identity, remove slots, reject unknown id", async () => {
+      const icon = { src: "https://example.com/icon.png", kind: "image" as const };
+      const background = { src: "https://example.com/loop.webm", kind: "video" as const };
+      await s.updateOperator("t-op", (o) => { o.appearance = { icon, background }; });
+      assert.deepEqual((await s.getOperator("t-op"))?.appearance, { icon, background });
+      assert.deepEqual((await s.listOperators()).find((o) => o.id === "t-op")?.appearance, { icon, background });
+      await s.updateOperator("t-op", (o) => { delete o.appearance?.icon; });
+      const op = (await s.getOperator("t-op"))!;
+      assert.deepEqual(op.appearance, { background });
+      assert.equal(op.name, "Test operator");
+      assert.equal(op.id, "t-op");
+      await assert.rejects(s.updateOperator("missing-op", () => {}), /not found/);
+      await s.updateOperator("t-op", (o) => { delete o.appearance; });
+    });
+
     test("keystones: create, get, list in order, reject duplicate slugs", async () => {
       await s.createKeystone(keystone("t-alpha"));
       await s.createKeystone(keystone("t-beta"));

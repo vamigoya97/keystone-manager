@@ -66,8 +66,8 @@ try {
     for (const o of src.operators) {
       await tx
         .insert(operators)
-        .values({ id: o.id, name: o.name, createdAt: o.createdAt })
-        .onConflictDoUpdate({ target: operators.id, set: { name: o.name, createdAt: o.createdAt } });
+        .values({ id: o.id, name: o.name, createdAt: o.createdAt, appearance: o.appearance })
+        .onConflictDoUpdate({ target: operators.id, set: { name: o.name, createdAt: o.createdAt, ...(o.appearance ? { appearance: o.appearance } : {}) } });
     }
 
     const ids = new Map<string, string>();

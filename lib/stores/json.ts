@@ -233,6 +233,15 @@ export function createOperator(op: Operator): Promise<void> {
   });
 }
 
+export function updateOperator(id: string, fn: (operator: Operator) => void): Promise<Operator> {
+  return mutate((d) => {
+    const op = d.operators.find((o) => o.id === id);
+    if (!op) throw new Error("Operator not found");
+    fn(op);
+    return op;
+  });
+}
+
 // ── Item batches ───────────────────────────────────────────────
 
 export async function listItemBatches(operatorId?: string): Promise<ItemBatch[]> {
@@ -292,6 +301,7 @@ export const jsonStore: Store = {
   listOperators,
   getOperator,
   createOperator,
+  updateOperator,
   listItemBatches,
   getItemBatch,
   createItemBatch,

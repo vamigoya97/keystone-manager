@@ -254,6 +254,7 @@ export function OperatorConsole({
               onAddOperator={() => setAddingOperator(true)}
               onSelect={(slug) => setSelected(slug)}
               onCreate={() => setCreating(true)}
+              onAppearanceSaved={(updated) => setOperators((ops) => ops?.map((op) => op.id === updated.id ? updated : op) ?? null)}
             />
 
             {current && (

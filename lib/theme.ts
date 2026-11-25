@@ -91,7 +91,7 @@ export function resolveTheme(exp: Named) {
 // ── Validation (server applies this to anything an operator saves) ───────
 
 /** Only https URLs or ipfs:// are accepted for media. */
-function media(v: unknown): ThemeMedia | undefined {
+export function sanitizeMedia(v: unknown): ThemeMedia | undefined {
   if (!v || typeof v !== "object") return undefined;
   const m = v as Record<string, unknown>;
   const src = typeof m.src === "string" ? m.src : "";
@@ -151,8 +151,8 @@ export function sanitizeTheme(input: unknown): KeystoneTheme {
   const t = (input && typeof input === "object" ? input : {}) as Record<string, any>;
   const slot = <K extends string>(key: K, m: ThemeMedia | undefined) => (m ? ({ [key]: m } as Record<K, ThemeMedia>) : undefined);
   const out: KeystoneTheme = {
-    background: slot("media", media(t.background?.media)),
-    gallery: slot("banner", media(t.gallery?.banner)),
+    background: slot("media", sanitizeMedia(t.background?.media)),
+    gallery: slot("banner", sanitizeMedia(t.gallery?.banner)),
     claim: claim(t.claim),
   };
   for (const k of Object.keys(out) as (keyof KeystoneTheme)[]) if (!out[k]) delete out[k];

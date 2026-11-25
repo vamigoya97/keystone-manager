@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import OperatorAppearance from "./OperatorAppearance";
+import { MediaView } from "@/components/nfc/themed";
 import { Badge, Panel } from "./ui";
 
 export type AdminKeystone = Keystone & { memberCount: number; phase: KeystonePhase | null };
@@ -40,6 +42,7 @@ export default function OperatorPanel({
   onAddOperator,
   onSelect,
   onCreate,
+  onAppearanceSaved,
 }: {
   operators: Operator[];
   operator: Operator;
@@ -52,6 +55,7 @@ export default function OperatorPanel({
   onAddOperator: () => void;
   onSelect: (slug: string) => void;
   onCreate: () => void;
+  onAppearanceSaved: (operator: Operator) => void;
 }) {
   const [view, setView] = useState<View>("list");
   useEffect(() => {
@@ -96,6 +100,8 @@ export default function OperatorPanel({
           </UiButton>
         </div>
       </div>
+
+      <OperatorAppearance key={operator.id} operator={operator} onSaved={onAppearanceSaved} />
 
       <div className="mt-5">
         {keystones.length === 0 ? (
@@ -174,10 +180,10 @@ function Avatar({ operator, keystones, small = false }: { operator: Operator; ke
   const swatch = keystones.find((k) => k.operatorId === operator.id)?.palette ?? ["#3a3a3a", "#1f1f1f"];
   return (
     <span
-      className={cn("flex shrink-0 items-center justify-center font-semibold text-white", small ? "size-8 rounded-md text-xs" : "size-9 rounded-md text-sm")}
+      className={cn("flex shrink-0 items-center justify-center font-semibold text-white", small ? "size-8 rounded-full overflow-hidden text-xs" : "size-9 rounded-full overflow-hidden text-sm")}
       style={{ background: `linear-gradient(135deg, ${swatch[0]}, ${swatch[1]})` }}
     >
-      {operator.name.replace(/[^a-z0-9]/gi, "").charAt(0).toUpperCase() || "•"}
+      {operator.appearance?.icon ? <MediaView media={operator.appearance.icon} className="h-full w-full object-cover" /> : operator.name.replace(/[^a-z0-9]/gi, "").charAt(0).toUpperCase() || "•"}
     </span>
   );
 }

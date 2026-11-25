@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { galleryKind, type GalleryItem, type PublicKeystone } from "@/lib/keystones";
+import { galleryKind, type GalleryItem, type PublicKeystone, type ThemeMedia } from "@/lib/keystones";
 import { formatDuration } from "@/lib/gallery";
 import { resolveTheme } from "@/lib/theme";
 import { animate, motion, useMotionValue, useTransform, useReducedMotion as useMotionReducedMotion } from "motion/react";
@@ -11,6 +11,7 @@ import type { AccessStatus } from "@/lib/useAccess";
 import type { MemberKeystone } from "./member";
 import TokenCard from "./TokenCard";
 import QrCode from "./QrCode";
+import MemberBackground from "./MemberBackground";
 import { MediaView } from "./themed";
 
 /**
@@ -718,7 +719,7 @@ export function PlateVault({
           {myKeystones && (
             <div className="px-5 pt-10">
               <Link
-                href="/"
+                href={`/o/${encodeURIComponent(keystone.operatorId)}`}
                 className="flex h-12 w-full items-center justify-center rounded-full border border-current text-[15px] font-medium text-[var(--p-ink)] active:opacity-80 focus-visible:outline-offset-2"
               >
                 My Keystones
@@ -966,20 +967,29 @@ export function PlateHome({
   error,
   onSignIn,
   contained = false,
+  background,
+  backHref,
+  operatorName,
 }: {
   state: "loading" | "signed-out" | "ready";
   keystones: MemberKeystone[];
   error?: string | null;
   onSignIn?: () => void;
   contained?: boolean;
+  background?: ThemeMedia;
+  backHref?: string;
+  operatorName?: string;
 }) {
   const reduceMotion = useMotionReducedMotion();
 
   return (
-    <div className={`flex ${height(contained)} flex-col ${page}`} style={PLATE}>
+    <div className={`relative isolate flex ${height(contained)} flex-col ${page}`} style={{ ...PLATE, ...(background ? ON_DARK : {}) }}>
+      <MemberBackground media={background} />
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-        <h1 className="sr-only">Your keystones</h1>
-        <div aria-hidden className="h-[max(16px,env(safe-area-inset-top))] shrink-0" />
+        <header className="flex min-h-16 items-center justify-between gap-4 px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))]">
+          <div><h1 className="sr-only">My Keystones</h1>{operatorName && <p className="mt-1 text-[12px] text-[var(--p-slate)]">{operatorName}</p>}</div>
+          {backHref && <Link href={backHref} aria-label="Back to Operators" className="flex h-11 w-11 shrink-0 items-center justify-center border border-current text-inherit hover:no-underline"><svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6"><path d="m12 5-7 7 7 7M5 12h14" /></svg></Link>}
+        </header>
         {state === "signed-out" ? (
           <div className="mt-auto px-5 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
             <p className="mb-2 text-[28px] font-semibold leading-[1.1] tracking-[-0.02em]">Hold your phone to your item.</p>
@@ -1014,7 +1024,7 @@ export function PlateHome({
                   index % 2 === col ? (
                     <motion.div
                       key={k.slug}
-                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      initial={reduceMotion ? false : { y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
                     >

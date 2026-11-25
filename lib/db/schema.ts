@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { bigint, bigserial, boolean, index, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
-import type { Keystone } from "../keystones";
+import type { Keystone, OperatorAppearance } from "../keystones";
 
 /**
  * Postgres tables for lib/stores/postgres.ts. Change a table here, then run
@@ -13,6 +13,7 @@ export const operators = pgTable("operators", {
   /** Keeps the order operators were created in. */
   seq: bigserial("seq", { mode: "number" }).notNull(),
   name: text("name").notNull(),
+  appearance: jsonb("appearance").$type<OperatorAppearance>(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull(),
 });
 

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { signIn } from "@/lib/signIn";
-import type { KeystonePhase } from "@/lib/keystones";
+import type { KeystonePhase, OperatorAppearance } from "@/lib/keystones";
 import { useAuthedFetch } from "@/lib/useAccess";
 import { PLATE } from "./plate";
 
@@ -21,7 +21,7 @@ export type MemberKeystone = {
   slug: string;
   name: string;
   /** The creator, community or brand that issued the keystone. */
-  operator: { id: string; name: string } | null;
+  operator: { id: string; name: string; appearance?: OperatorAppearance } | null;
   startDate: string | null;
   endDate: string | null;
   dateLabel: string | null;
@@ -36,32 +36,27 @@ export type MemberKeystone = {
   photos: number;
 };
 
-/** Keystones the member can currently use (held, or the chain couldn't be reached). */
-export const usable = (k: MemberKeystone) => k.status === "active" || k.status === "received" || k.status === "unknown";
-
 export function useKeystones() {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, user } = usePrivy();
   const authedFetch = useAuthedFetch();
-  const [keystones, setKeystones] = useState<MemberKeystone[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
+  const userId = user?.id;
+  // Key the response by account so a new login never sees the previous holder's list.
+  const [snapshot, setSnapshot] = useState<{ userId?: string; keystones: MemberKeystone[] | null; error: string | null }>({ keystones: null, error: null });
   useEffect(() => {
-    if (!ready || !authenticated) return;
+    if (!ready || !authenticated || !userId) return;
     let cancelled = false;
+    setSnapshot({ userId, keystones: null, error: null });
     authedFetch("/api/me/keystones")
       .then(async (res) => {
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok) throw new Error(data.error);
-        setKeystones(data.keystones);
+        setSnapshot({ userId, keystones: data.keystones, error: null });
       })
-      .catch((e) => !cancelled && setError(e.message || "Couldn't load your keystones"));
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, authenticated, authedFetch]);
-
-  return { keystones, error };
+      .catch((e) => !cancelled && setSnapshot({ userId, keystones: null, error: e.message || "Couldn't load your keystones" }));
+    return () => { cancelled = true; };
+  }, [ready, authenticated, userId, authedFetch]);
+  return authenticated && snapshot.userId === userId ? { keystones: snapshot.keystones, error: snapshot.error } : { keystones: null, error: null };
 }
 
 /**
@@ -75,47 +70,9 @@ export function useHoldsOthers(slug: string) {
   return (keystones ?? []).some((k) => k.slug !== slug && usable(k));
 }
 
-/**
- * Keystones by time: live and upcoming (soonest first), ongoing (no dates,
- * newest claim first), then past (most recent first).
- */
-export function groupByTime(keystones: MemberKeystone[]) {
-  const soon = keystones
-    .filter((k) => k.phase === "upcoming" || k.phase === "live")
-    .sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""));
-  const ongoing = keystones
-    .filter((k) => !k.phase)
-    .sort((a, b) => (b.claimedAt ?? "").localeCompare(a.claimedAt ?? ""));
-  const past = keystones
-    .filter((k) => k.phase === "past")
-    .sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""));
-  return { soon, ongoing, past, all: [...soon, ...ongoing, ...past] };
-}
-
-export type OperatorGroup = {
-  operator: { id: string; name: string };
-  /** Every keystone from this operator, any status. */
-  keystones: MemberKeystone[];
-  /** Keystones the member can use right now. */
-  active: MemberKeystone[];
-  time: ReturnType<typeof groupByTime>;
-};
-
-/**
- * Keystones grouped by the operator that issued them. An operator counts once
- * the member has at least one usable keystone from it; operators they only
- * used to hold keystones from come back with active: [].
- */
-export function groupOperators(keystones: MemberKeystone[]): OperatorGroup[] {
-  const groups = new Map<string, MemberKeystone[]>();
-  for (const k of keystones) {
-    if (!k.operator) continue;
-    groups.set(k.operator.id, [...(groups.get(k.operator.id) ?? []), k]);
-  }
-  return [...groups.values()]
-    .map((list) => ({ operator: list[0].operator!, keystones: list, active: list.filter(usable), time: groupByTime(list) }))
-    .sort((a, b) => b.active.length - a.active.length || a.operator.name.localeCompare(b.operator.name));
-}
+export { usable, groupByTime, groupOperators } from "@/lib/memberKeystones";
+import { usable, type OperatorGroup } from "@/lib/memberKeystones";
+export type { OperatorGroup } from "@/lib/memberKeystones";
 
 /** Plate surfaces, the same as the member home (components/nfc/plate.tsx). */
 const page = "bg-[var(--p-page)] text-[var(--p-ink)] [font-family:var(--font-plate),system-ui,sans-serif] antialiased";

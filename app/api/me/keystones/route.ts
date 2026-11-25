@@ -68,7 +68,7 @@ function toView(exp: Keystone, operator: Operator | undefined, member: Member | 
   return {
     slug: exp.slug,
     name: exp.name,
-    operator: operator ? { id: operator.id, name: operator.name } : null,
+    operator: operator ? { id: operator.id, name: operator.name, appearance: operator.appearance } : null,
     startDate: exp.startDate ?? null,
     endDate: exp.endDate ?? null,
     dateLabel: formatDates(exp) ?? null,

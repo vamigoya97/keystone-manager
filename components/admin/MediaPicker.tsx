@@ -10,10 +10,16 @@ import { Button } from "./ui";
 /** Upload one image, GIF or short looping video to public IPFS for a customization slot. */
 export default function MediaPicker({
   slug,
+  endpoint,
+  slot,
+  imageOnly = false,
   media,
   onChange,
 }: {
-  slug: string;
+  slug?: string;
+  endpoint?: string;
+  slot?: "icon" | "background";
+  imageOnly?: boolean;
   media?: ThemeMedia;
   onChange: (m: ThemeMedia | undefined) => void;
 }) {
@@ -24,7 +30,7 @@ export default function MediaPicker({
 
   async function upload(file: File) {
     setError(null);
-    if (!MEDIA_TYPES.includes(file.type)) return setError("Use PNG, JPG, WebP, GIF, AVIF, MP4 or WebM");
+    if (!MEDIA_TYPES.includes(file.type) || (imageOnly && !file.type.startsWith("image/"))) return setError(imageOnly ? "Use PNG, JPG, WebP, GIF or AVIF" : "Use PNG, JPG, WebP, GIF, AVIF, MP4 or WebM");
     if (file.size > MEDIA_MAX_BYTES) return setError("Keep media under 20 MB");
     if (file.type.startsWith("video/")) {
       const seconds = await videoDuration(file);
@@ -34,7 +40,8 @@ export default function MediaPicker({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await authedFetch(`/api/admin/keystones/${slug}/media`, { method: "POST", body: form });
+      if (slot) form.append("slot", slot);
+      const res = await authedFetch(endpoint ?? `/api/admin/keystones/${slug}/media`, { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
       onChange(data as ThemeMedia);
@@ -48,13 +55,13 @@ export default function MediaPicker({
   return (
     <div>
       <div className="flex items-center gap-3">
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-input bg-background">
+        <div className={`h-14 w-14 shrink-0 overflow-hidden ${slot === "icon" ? "rounded-full" : "rounded-xl"} border border-input bg-background`}>
           {media && <MediaView media={media} className="h-full w-full object-cover" />}
         </div>
         <input
           ref={input}
           type="file"
-          accept={MEDIA_TYPES.join(",")}
+          accept={MEDIA_TYPES.filter((t) => !imageOnly || t.startsWith("image/")).join(",")}
           hidden
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -64,7 +71,7 @@ export default function MediaPicker({
         />
         <Button busy={busy} onClick={() => input.current?.click()}>{media ? "Replace" : "Upload"}</Button>
         {media && <Button onClick={() => onChange(undefined)}>Remove</Button>}
-        <span className="text-xs text-muted-foreground">Image, GIF, or MP4/WebM up to {VIDEO_MAX_SECONDS}s</span>
+        <span className="text-xs text-muted-foreground">{imageOnly ? "Image or GIF" : `Image, GIF, or MP4/WebM up to ${VIDEO_MAX_SECONDS}s`}</span>
       </div>
       {error && <p className="mt-2 text-sm text-rose">{error}</p>}
     </div>

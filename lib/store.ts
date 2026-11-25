@@ -35,6 +35,7 @@ export function withClaimLock<T>(keys: string[], fn: () => Promise<T>): Promise<
 export const listOperators: Store["listOperators"] = () => store().listOperators();
 export const getOperator: Store["getOperator"] = (id) => store().getOperator(id);
 export const createOperator: Store["createOperator"] = (op) => store().createOperator(op);
+export const updateOperator: Store["updateOperator"] = (id, fn) => store().updateOperator(id, fn);
 
 export const listItemBatches: Store["listItemBatches"] = (operatorId) => store().listItemBatches(operatorId);
 export const getItemBatch: Store["getItemBatch"] = (id) => store().getItemBatch(id);

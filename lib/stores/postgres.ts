@@ -280,7 +280,7 @@ async function withClaimLock<T>(unsorted: string[], fn: () => Promise<T>): Promi
 
 // ── Operators ──────────────────────────────────────────────────
 
-const toOperator = (r: typeof operators.$inferSelect): Operator => ({ id: r.id, name: r.name, createdAt: iso(r.createdAt) });
+const toOperator = (r: typeof operators.$inferSelect): Operator => ({ id: r.id, name: r.name, createdAt: iso(r.createdAt), ...(r.appearance ? { appearance: r.appearance } : {}) });
 
 async function listOperators(): Promise<Operator[]> {
   return (await getDb().select().from(operators).orderBy(asc(operators.seq))).map(toOperator);
@@ -294,10 +294,21 @@ async function getOperator(id: string): Promise<Operator | undefined> {
 async function createOperator(op: Operator): Promise<void> {
   const rows = await getDb()
     .insert(operators)
-    .values({ id: op.id, name: op.name, createdAt: op.createdAt })
+    .values({ id: op.id, name: op.name, createdAt: op.createdAt, appearance: op.appearance })
     .onConflictDoNothing()
     .returning({ id: operators.id });
   if (!rows.length) throw new Error(`"${op.id}" already exists`);
+}
+
+async function updateOperator(id: string, fn: (operator: Operator) => void): Promise<Operator> {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select().from(operators).where(eq(operators.id, id)).for("update");
+    if (!row) throw new Error("Operator not found");
+    const op = toOperator(row);
+    fn(op);
+    await tx.update(operators).set({ appearance: op.appearance ?? null }).where(eq(operators.id, id));
+    return op;
+  });
 }
 
 // ── Item batches ───────────────────────────────────────────────
@@ -365,6 +376,7 @@ export const postgresStore: Store = {
   listOperators,
   getOperator,
   createOperator,
+  updateOperator,
   listItemBatches,
   getItemBatch,
   createItemBatch,

@@ -54,6 +54,7 @@ export interface Store {
   listOperators(): Promise<Operator[]>;
   getOperator(id: string): Promise<Operator | undefined>;
   createOperator(op: Operator): Promise<void>;
+  updateOperator(id: string, fn: (operator: Operator) => void): Promise<Operator>;
 
   listItemBatches(operatorId?: string): Promise<ItemBatch[]>;
   getItemBatch(id: string): Promise<ItemBatch | undefined>;
