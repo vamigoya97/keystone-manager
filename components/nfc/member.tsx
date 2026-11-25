@@ -136,7 +136,7 @@ export function MemberShell({
   nav?: boolean;
   children: (ctx: { who?: string }) => React.ReactNode;
 }) {
-  const { ready, authenticated, login, logout, user } = usePrivy();
+  const { ready, authenticated, login, user } = usePrivy();
   const pathname = usePathname();
   const who = user?.phone?.number || user?.email?.address;
 
@@ -145,11 +145,6 @@ export function MemberShell({
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
         <header className="flex items-baseline justify-between px-5 pb-4 pt-[max(20px,calc(env(safe-area-inset-top)+12px))]">
           <span className="text-[17px] font-semibold tracking-[-0.01em]">{title}</span>
-          {authenticated && (
-            <button onClick={() => logout()} className="text-[13px] text-[var(--p-slate)] underline-offset-4 hover:underline">
-              Sign out
-            </button>
-          )}
         </header>
 
         {!ready ? (

@@ -419,7 +419,7 @@ export default function GalleryTab({
         <p className="mb-3 text-xs text-muted-foreground">Vault preview · tap an item</p>
         <PhonePreview>
           <div className="h-full overflow-y-auto">
-            <PlateVault keystone={keystone} items={items} onOpen={setOpen} onSignOut={() => {}} contained />
+            <PlateVault keystone={keystone} items={items} onOpen={setOpen} contained />
           </div>
           {open !== null && items[open] && (
             <PlateViewer contained items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)} logo={keystone.tokenImage} />

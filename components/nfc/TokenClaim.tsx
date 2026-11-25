@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useLogin, usePrivy } from "@privy-io/react-auth";
+import { useLogin } from "@privy-io/react-auth";
 import { signIn } from "@/lib/signIn";
 import type { PublicKeystone } from "@/lib/keystones";
 import { useAccess, useAuthedFetch } from "@/lib/useAccess";
@@ -52,7 +52,6 @@ export default function TokenClaim({
   const { slug } = keystone;
   const router = useRouter();
   const pathname = usePathname();
-  const { logout } = usePrivy();
   const [open, setOpen] = useState<number | null>(null);
   const holdsOthers = useHoldsOthers(slug);
   const enteredVault = useRef(false);
@@ -175,7 +174,6 @@ export default function TokenClaim({
         items={items}
         animateGalleryEntrance
         onOpen={setOpen}
-        onSignOut={() => logout().then(() => router.replace(`/x/${slug}`))}
         myKeystones={holdsOthers}
       />
       {open !== null && items[open] && (

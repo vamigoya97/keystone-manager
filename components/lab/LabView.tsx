@@ -116,10 +116,10 @@ export default function LabView({
           <PlateHome state="signed-out" keystones={[]} contained />
         </Phone>
         <Phone title="Home" note="Claimed keystones, two per row; tap opens the vault">
-          <PlateHome state="ready" keystones={held} onSignOut={() => {}} contained />
+          <PlateHome state="ready" keystones={held} contained />
         </Phone>
         <Phone title="Home, empty" note="Signed in, nothing claimed yet">
-          <PlateHome state="ready" keystones={[]} onSignOut={() => {}} contained />
+          <PlateHome state="ready" keystones={[]} contained />
         </Phone>
       </Section>
     </main>
@@ -294,7 +294,7 @@ function VaultPhone({ keystone, items }: { keystone: PublicKeystone; items: Gall
     <figure>
       <PhonePreview>
         <div className="h-full overflow-y-auto">
-          <PlateVault keystone={keystone} items={items} onOpen={setOpen} onSignOut={() => {}} myKeystones contained />
+          <PlateVault keystone={keystone} items={items} onOpen={setOpen} myKeystones contained />
         </div>
         {open !== null && items[open] && <PlateViewer items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)} logo={keystone.tokenImage} contained />}
       </PhonePreview>

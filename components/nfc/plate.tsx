@@ -647,14 +647,13 @@ const SKELETON = [5 / 4, 3 / 4, 1, 4 / 5, 4 / 3, 1, 3 / 4, 5 / 4];
  * The vault: the operator's banner, then every item edge to edge in two
  * columns, then the keystone's description and attributes on the operator's
  * background. Members holding more than one keystone get a way back to all of
- * them; Sign out sits at the very end.
+ * them at the very end.
  */
 export function PlateVault({
   keystone,
   items,
   loading = false,
   onOpen,
-  onSignOut,
   myKeystones = false,
   contained = false,
   animateGalleryEntrance = false,
@@ -664,7 +663,6 @@ export function PlateVault({
   /** Access is still being confirmed: grey placeholders instead of items. */
   loading?: boolean;
   onOpen: (i: number) => void;
-  onSignOut?: () => void;
   /** Show "My Keystones" (back to the member home): the member holds other keystones too. */
   myKeystones?: boolean;
   contained?: boolean;
@@ -725,13 +723,6 @@ export function PlateVault({
               >
                 My Keystones
               </Link>
-            </div>
-          )}
-          {onSignOut && (
-            <div className="px-5 pt-10">
-              <button onClick={onSignOut} className="text-[13px] text-[var(--p-slate)] underline-offset-4 hover:underline">
-                Sign out
-              </button>
             </div>
           )}
         </div>
@@ -928,23 +919,25 @@ function Wave({ className = "" }: { className?: string }) {
 
 // ── Member home ──────────────────────────────────────────────────
 
+/** Soft lift under each keystone on the member home. */
+const TILE_SHADOW = "shadow-[0_1px_2px_rgba(0,0,0,0.08),0_6px_16px_-4px_rgba(0,0,0,0.14)]";
+
 /**
- * The member home: claimed keystones as square artwork, two per row, edge to
- * edge. Each opens its vault. Signed out, one sentence and Sign in.
+ * The member home: claimed keystones at their artwork's own shape, two
+ * columns with space around them, each lifted by a soft shadow. Each opens its
+ * vault. Signed out, one sentence and Sign in.
  */
 export function PlateHome({
   state,
   keystones,
   error,
   onSignIn,
-  onSignOut,
   contained = false,
 }: {
   state: "loading" | "signed-out" | "ready";
   keystones: MemberKeystone[];
   error?: string | null;
   onSignIn?: () => void;
-  onSignOut?: () => void;
   contained?: boolean;
 }) {
   const reduceMotion = useMotionReducedMotion();
@@ -952,14 +945,8 @@ export function PlateHome({
   return (
     <div className={`flex ${height(contained)} flex-col ${page}`} style={PLATE}>
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-        <header className="flex items-baseline justify-between px-5 pb-4 pt-[max(20px,calc(env(safe-area-inset-top)+12px))]">
-          <h1 className="text-[17px] font-semibold tracking-[-0.01em]">Your keystones</h1>
-          {state === "ready" && onSignOut && (
-            <button onClick={onSignOut} className="text-[13px] text-[var(--p-slate)] underline-offset-4 hover:underline">
-              Sign out
-            </button>
-          )}
-        </header>
+        <h1 className="sr-only">Your keystones</h1>
+        <div aria-hidden className="h-[max(16px,env(safe-area-inset-top))] shrink-0" />
         {state === "signed-out" ? (
           <div className="mt-auto px-5 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
             <p className="mb-2 text-[28px] font-semibold leading-[1.1] tracking-[-0.02em]">Hold your phone to your item.</p>
@@ -971,9 +958,9 @@ export function PlateHome({
         ) : error ? (
           <p className="px-5 pt-16 text-[15px] leading-[1.6] text-[var(--p-alert)]">{error}</p>
         ) : state === "loading" ? (
-          <div className="grid grid-cols-2 gap-[2px]" aria-busy>
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="aspect-square bg-[var(--p-raised)]" />
+          <div className="columns-2 gap-4 px-4 pb-10" aria-busy>
+            {[4 / 5, 1, 1, 3 / 4].map((r, i) => (
+              <div key={i} className="mb-4 bg-[var(--p-raised)]" style={{ aspectRatio: r }} />
             ))}
           </div>
         ) : keystones.length === 0 ? (
@@ -981,10 +968,12 @@ export function PlateHome({
             Nothing here yet. Hold your phone to an item to secure its keystone.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-[2px]">
+          // Masonry columns, so each artwork keeps its own proportions.
+          <div className="columns-2 gap-4 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
             {keystones.map((k, index) => (
               <motion.div
                 key={k.slug}
+                className="mb-4 break-inside-avoid"
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
@@ -993,10 +982,10 @@ export function PlateHome({
                   href={`/x/${k.slug}/gallery`}
                   title={k.name}
                   aria-label={k.name}
-                  className="block aspect-square overflow-hidden focus-visible:outline-offset-[-2px]"
+                  className={`block overflow-hidden focus-visible:outline-offset-2 ${TILE_SHADOW} ${k.tokenImage ? "" : "aspect-square"}`}
                   style={{ background: `linear-gradient(135deg, ${k.palette[0]}, ${k.palette[1]})` }}
                 >
-                  {k.tokenImage && <img src={k.tokenImage} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                  {k.tokenImage && <img src={k.tokenImage} alt="" loading="lazy" className="block h-auto w-full" />}
                 </Link>
               </motion.div>
             ))}

@@ -7,7 +7,7 @@ import { PlateHome } from "./plate";
 
 /** Member home: the keystones you've claimed, as a two-column grid of their artwork. */
 export default function MemberHome() {
-  const { ready, authenticated, login, logout } = usePrivy();
+  const { ready, authenticated, login } = usePrivy();
   const { keystones, error } = useKeystones();
   const held = (keystones ?? []).filter(usable).sort((a, b) => (b.claimedAt ?? "").localeCompare(a.claimedAt ?? ""));
 
@@ -17,7 +17,6 @@ export default function MemberHome() {
       keystones={held}
       error={authenticated ? error : null}
       onSignIn={() => signIn(login, "member")}
-      onSignOut={() => logout()}
     />
   );
 }
