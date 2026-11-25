@@ -294,6 +294,7 @@ html, body {
  * Base theme and accent: app/providers.tsx (appearance). */
 #privy-dialog,
 #privy-modal-content {
+  color-scheme: dark;
   --privy-color-background: #0c0c0b;
   --privy-color-background-2: #161615;
   --privy-color-background-3: #1f1f1d;
@@ -330,10 +331,6 @@ html, body {
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   backdrop-filter: blur(24px) saturate(1.4);
   box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.06) inset, 0 -8px 32px rgba(0, 0, 0, 0.18);
-}
-html[data-signin="member"] #privy-dialog #privy-modal-content {
-  background-color: rgba(241, 241, 239, 0.72);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 -8px 32px rgba(0, 0, 0, 0.12);
 }
 
 /* Shorter sheet: tighter header, gaps and footer than Privy's defaults. */
@@ -376,30 +373,10 @@ html[data-signin="member"] #privy-dialog #privy-modal-content {
   padding-left: 114px;
 }
 
-/* Holders sign in over the member screens: Plate paper and ink (lib/signIn.ts sets data-signin). */
-html[data-signin="member"] #privy-dialog,
-html[data-signin="member"] #privy-modal-content {
-  --privy-color-background: #f1f1ef;
-  --privy-color-background-2: #e5e5e2;
-  --privy-color-background-3: #dadad6;
-  --privy-color-foreground: #161616;
-  --privy-color-foreground-2: #44443f;
-  --privy-color-foreground-3: #66665f;
-  --privy-color-foreground-4: #cdcdc8;
-  --privy-color-foreground-accent: #f1f1ef;
-  --privy-color-accent: #161616;
-  --privy-color-accent-light: #2a2a28;
-  --privy-color-accent-dark: #000000;
-  --privy-color-border-default: #cdcdc8;
-  --privy-color-border-interactive: #b4b4ae;
-  --privy-color-border-focus: #161616;
-  --privy-color-success: #161616;
-  --privy-color-success-dark: #000000;
-  --privy-color-success-light: #e5e5e2;
-  --privy-color-success-bg: rgba(22, 22, 22, 0.06);
-  --privy-color-border-success: #161616;
-  --privy-color-error: #9a3a2c;
-  --privy-color-icon-default: #161616;
-  --privy-color-icon-muted: #66665f;
-  --privy-color-icon-subtle: #8a8a83;
+/* Safari/Chrome autofill paints over background-color. An inset fill keeps
+   SMS, email and verification fields dark without changing their focus ring. */
+#privy-modal-content input:is(:autofill, :-webkit-autofill) {
+  -webkit-text-fill-color: var(--privy-color-foreground);
+  caret-color: var(--privy-color-foreground);
+  -webkit-box-shadow: 0 0 0 1000px var(--privy-color-background) inset !important;
 }

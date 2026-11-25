@@ -12,9 +12,8 @@ export const OPERATOR_LOGIN: LoginModalOptions = { loginMethods: ["email"] };
 export type SignInAudience = "member" | "operator";
 
 /**
- * Open Privy for one audience. The audience is set on <html> first, so the modal
- * takes that audience's look (app/globals.css): light Plate paper for holders,
- * the dark console for operators.
+ * Open Privy for one audience: SMS for holders, email for operators.
+ * Both audiences use the same dark glass modal (app/globals.css).
  */
 export function signIn(login: (options?: LoginModalOptions) => void, audience: SignInAudience) {
   document.documentElement.dataset.signin = audience;
