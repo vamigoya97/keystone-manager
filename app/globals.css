@@ -288,50 +288,66 @@ html, body {
   .console-progress { animation: none; width: 100%; opacity: 0.4; }
 }
 
-/* ── Privy sign-in modal ──
- * Neutral and dark like the member screens and the console, in the member typeface.
- * Privy sets its variables on :root; these sit on the dialog itself, so they win.
- * Base theme and accent: app/providers.tsx (appearance). */
+/* Keystone · Smoke · square glass, shared across Privy login screens. */
 #privy-dialog,
 #privy-modal-content {
   color-scheme: dark;
-  --privy-color-background: #0c0c0b;
-  --privy-color-background-2: #161615;
-  --privy-color-background-3: #1f1f1d;
-  --privy-color-foreground: #f2f1ec;
-  --privy-color-foreground-2: #b9b7b0;
-  --privy-color-foreground-3: #8a8882;
-  --privy-color-foreground-4: #3a3936;
-  --privy-color-foreground-accent: #0c0c0b;
-  --privy-color-accent: #f2f1ec;
-  --privy-color-accent-light: #ffffff;
-  --privy-color-accent-dark: #d9d7d0;
-  --privy-color-border-default: #2a2927;
-  --privy-color-border-interactive: #3a3936;
-  --privy-color-border-focus: #f2f1ec;
-  /* Success (signed in, code accepted) in ink rather than Privy's green. */
-  --privy-color-success: #f2f1ec;
-  --privy-color-success-dark: #d9d7d0;
-  --privy-color-success-light: #2a2927;
-  --privy-color-success-bg: rgba(242, 241, 236, 0.08);
-  --privy-color-border-success: #f2f1ec;
-  --privy-color-error: #ff8a7a;
-  --privy-border-radius-xs: 4px;
-  --privy-border-radius-sm: 6px;
-  --privy-border-radius-md: 10px;
-  --privy-border-radius-mdlg: 12px;
-  --privy-border-radius-lg: 16px;
+  --glass-frost: 0.2;
+  --glass-saturation: 2;
+  --filter-id: blur(40px);
+  --keystone-glass-tint: 16 21 20;
+  --keystone-ink: #f1f2e8;
+  --keystone-control-opacity: 0.02;
+  --keystone-inset: inset 0 0 2px 1px rgb(241 242 232 / 0.7), inset 0 0 10px 4px rgb(241 242 232 / 0.4), inset 0 4px 16px #11111a0d, inset 0 8px 24px #11111a0d, inset 0 6px 56px #11111a0d;
+  --privy-color-background: rgb(16 21 20 / 0.02);
+  --privy-color-background-2: rgb(16 21 20 / 0.02);
+  --privy-color-background-3: rgb(16 21 20 / 0.02);
+  --privy-color-foreground: #f1f2e8;
+  --privy-color-foreground-2: #f1f2e8;
+  --privy-color-foreground-3: #f1f2e8;
+  --privy-color-foreground-4: #f1f2e8;
+  --privy-color-foreground-accent: #f1f2e8;
+  --privy-color-border-default: #f1f2e8;
+  --privy-color-border-interactive: #f1f2e8;
+  --privy-color-border-focus: #f1f2e8;
+  --privy-color-accent: #f1f2e8;
+  --privy-color-accent-light: #f1f2e8;
+  --privy-color-accent-dark: #f1f2e8;
+  --privy-color-error: #ffc1c1;
+  --privy-color-error-dark: #ffc1c1;
+  --privy-color-error-light: #ffc1c1;
+  --privy-color-error-bg: rgb(255 193 193 / 0.12);
+  --privy-color-border-error: #ffc1c1;
+  --privy-color-success: #baf5c8;
+  --privy-color-success-dark: #baf5c8;
+  --privy-color-success-light: #baf5c8;
+  --privy-color-success-bg: rgb(186 245 200 / 0.12);
+  --privy-color-border-success: #baf5c8;
+  --privy-border-radius-xs: 0px;
+  --privy-border-radius-sm: 0px;
+  --privy-border-radius-md: 0px;
+  --privy-border-radius-mdlg: 0px;
+  --privy-border-radius-lg: 0px;
   font-family: var(--font-plate), system-ui, sans-serif;
 }
 #privy-dialog * { font-family: inherit; }
-
-/* Frosted sheet: the page shows through, blurred. Fields keep the solid background. */
 #privy-dialog #privy-modal-content {
-  background-color: rgba(12, 12, 11, 0.72);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  backdrop-filter: blur(24px) saturate(1.4);
-  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.06) inset, 0 -8px 32px rgba(0, 0, 0, 0.18);
+  color: var(--keystone-ink);
+  background: rgb(var(--keystone-glass-tint) / var(--glass-frost));
+  -webkit-backdrop-filter: var(--filter-id) saturate(var(--glass-saturation));
+  backdrop-filter: var(--filter-id) saturate(var(--glass-saturation));
+  border: 1px solid var(--keystone-ink);
+  border-radius: 0;
+  box-shadow: var(--keystone-inset);
 }
+#privy-modal-content :is(button, input, select, label:has(input)) {
+  color: var(--keystone-ink);
+  border-radius: 0;
+  border-color: currentColor;
+  background-color: rgb(var(--keystone-glass-tint) / var(--keystone-control-opacity));
+  box-shadow: var(--keystone-inset);
+}
+#privy-modal-content input::placeholder { color: var(--keystone-ink); opacity: 1; }
 
 /* Shorter sheet: tighter header, gaps and footer than Privy's defaults. */
 #privy-modal-content [class*="ScreenRootInner-"] {
@@ -364,7 +380,7 @@ html, body {
   padding: 0 14px 0 0;
   border: 0;
   background: var(--privy-color-background)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%238a8882' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%23f1f2e8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E")
     no-repeat right 0 center / 10px 6px;
   color: var(--privy-color-foreground);
 }
