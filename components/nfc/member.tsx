@@ -65,6 +65,17 @@ export function useKeystones() {
 }
 
 /**
+ * Does the signed-in member hold a keystone other than `slug`? The vault only
+ * opens for a holder of `slug`, so this means they hold more than one. Counting
+ * the others (not the total) keeps it right just after a claim, before the list
+ * refetches.
+ */
+export function useHoldsOthers(slug: string) {
+  const { keystones } = useKeystones();
+  return (keystones ?? []).some((k) => k.slug !== slug && usable(k));
+}
+
+/**
  * Keystones by time: live and upcoming (soonest first), ongoing (no dates,
  * newest claim first), then past (most recent first).
  */

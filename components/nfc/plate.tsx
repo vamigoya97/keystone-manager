@@ -646,7 +646,8 @@ const SKELETON = [5 / 4, 3 / 4, 1, 4 / 5, 4 / 3, 1, 3 / 4, 5 / 4];
 /**
  * The vault: the operator's banner, then every item edge to edge in two
  * columns, then the keystone's description and attributes on the operator's
- * background. Sign out sits at the very end.
+ * background. Members holding more than one keystone get a way back to all of
+ * them; Sign out sits at the very end.
  */
 export function PlateVault({
   keystone,
@@ -654,6 +655,7 @@ export function PlateVault({
   loading = false,
   onOpen,
   onSignOut,
+  myKeystones = false,
   contained = false,
   animateGalleryEntrance = false,
 }: {
@@ -663,6 +665,8 @@ export function PlateVault({
   loading?: boolean;
   onOpen: (i: number) => void;
   onSignOut?: () => void;
+  /** Show "My Keystones" (back to the member home): the member holds other keystones too. */
+  myKeystones?: boolean;
   contained?: boolean;
   animateGalleryEntrance?: boolean;
 }) {
@@ -713,6 +717,16 @@ export function PlateVault({
         </motion.div>
         <div className="flex-1 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))] pt-10">
           <Details keystone={keystone} heading="About this keystone" />
+          {myKeystones && (
+            <div className="px-5 pt-10">
+              <Link
+                href="/"
+                className="flex h-12 w-full items-center justify-center rounded-full border border-current text-[15px] font-medium text-[var(--p-ink)] active:opacity-80 focus-visible:outline-offset-2"
+              >
+                My Keystones
+              </Link>
+            </div>
+          )}
           {onSignOut && (
             <div className="px-5 pt-10">
               <button onClick={onSignOut} className="text-[13px] text-[var(--p-slate)] underline-offset-4 hover:underline">

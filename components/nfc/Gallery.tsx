@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import type { PublicKeystone } from "@/lib/keystones";
 import { useAccess } from "@/lib/useAccess";
+import { useHoldsOthers } from "./member";
 import { PlateVault, PlateViewer } from "./plate";
 
 /** The vault: holders only. Everyone else goes back to the keystone page to secure it. */
@@ -15,6 +16,7 @@ export default function Gallery({ keystone }: { keystone: PublicKeystone }) {
   // Items come from the server only once it has confirmed access.
   const { status, gallery: items } = useAccess(slug);
   const [open, setOpen] = useState<number | null>(null);
+  const holdsOthers = useHoldsOthers(slug);
 
   useEffect(() => {
     if (status === "signed-out" || status === "not-holder" || status === "revoked") {
@@ -32,6 +34,7 @@ export default function Gallery({ keystone }: { keystone: PublicKeystone }) {
         loading={!holder}
         onOpen={setOpen}
         onSignOut={holder ? () => logout().then(() => router.replace(`/x/${slug}`)) : undefined}
+        myKeystones={holder && holdsOthers}
       />
       {open !== null && holder && items[open] && (
         <PlateViewer items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)} logo={keystone.tokenImage} />

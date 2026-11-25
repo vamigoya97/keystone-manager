@@ -6,6 +6,7 @@ import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { signIn } from "@/lib/signIn";
 import type { PublicKeystone } from "@/lib/keystones";
 import { useAccess, useAuthedFetch } from "@/lib/useAccess";
+import { useHoldsOthers } from "./member";
 import { PlateClaim, PlateVault, PlateViewer, type ClaimAccess, type MintPhase } from "./plate";
 
 export type TapParams = { c?: string; s?: string; picc_data?: string; cmac?: string };
@@ -53,6 +54,7 @@ export default function TokenClaim({
   const pathname = usePathname();
   const { logout } = usePrivy();
   const [open, setOpen] = useState<number | null>(null);
+  const holdsOthers = useHoldsOthers(slug);
   const enteredVault = useRef(false);
   const [access, setAccess] = useState<ClaimAccess>(tap ? "verifying" : source);
   const [tapError, setTapError] = useState<string | null>(null);
@@ -174,6 +176,7 @@ export default function TokenClaim({
         animateGalleryEntrance
         onOpen={setOpen}
         onSignOut={() => logout().then(() => router.replace(`/x/${slug}`))}
+        myKeystones={holdsOthers}
       />
       {open !== null && items[open] && (
         <PlateViewer items={items} index={open} onIndex={setOpen} onClose={() => setOpen(null)} logo={keystone.tokenImage} />
