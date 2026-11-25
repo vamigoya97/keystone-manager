@@ -308,7 +308,12 @@ html, body {
   --privy-color-border-default: #2a2927;
   --privy-color-border-interactive: #3a3936;
   --privy-color-border-focus: #f2f1ec;
-  --privy-color-success: #a8d5a2;
+  /* Success (signed in, code accepted) in ink rather than Privy's green. */
+  --privy-color-success: #f2f1ec;
+  --privy-color-success-dark: #d9d7d0;
+  --privy-color-success-light: #2a2927;
+  --privy-color-success-bg: rgba(242, 241, 236, 0.08);
+  --privy-color-border-success: #f2f1ec;
   --privy-color-error: #ff8a7a;
   --privy-border-radius-xs: 4px;
   --privy-border-radius-sm: 6px;
@@ -318,6 +323,58 @@ html, body {
   font-family: var(--font-plate), system-ui, sans-serif;
 }
 #privy-dialog * { font-family: inherit; }
+
+/* Frosted sheet: the page shows through, blurred. Fields keep the solid background. */
+#privy-dialog #privy-modal-content {
+  background-color: rgba(12, 12, 11, 0.72);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.06) inset, 0 -8px 32px rgba(0, 0, 0, 0.18);
+}
+html[data-signin="member"] #privy-dialog #privy-modal-content {
+  background-color: rgba(241, 241, 239, 0.72);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 -8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* Shorter sheet: tighter header, gaps and footer than Privy's defaults. */
+#privy-modal-content [class*="ScreenRootInner-"] {
+  background: transparent; /* Privy paints it solid, which would hide the frosted sheet */
+  gap: 14px;
+  padding-top: 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+/* Privy fades the login list's edges with solid gradients; on glass they show as a band. */
+#privy-modal-content [class*="LoginMethodContainer-"] {
+  background-image: none;
+}
+#privy-modal-content [class*="StyledHeader-"] {
+  padding-top: 8px;
+  padding-bottom: 0;
+}
+#privy-modal-content [class*="FooterContainer-"] {
+  gap: 12px;
+}
+
+/* Phone field: Privy lays the country picker over the input at a width that iOS's
+   native arrows don't fit, so "US +1", the arrows and the number run together.
+   Draw our own chevron inside a fixed-width picker and start the number after it. */
+#privy-dialog label:has(> select + input[type="tel"]) > select,
+#privy-modal-content label:has(> select + input[type="tel"]) > select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 84px; /* widest code, "MW +265", plus the chevron */
+  margin: 13px 0 0 16px;
+  padding: 0 14px 0 0;
+  border: 0;
+  background: var(--privy-color-background)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%238a8882' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E")
+    no-repeat right 0 center / 10px 6px;
+  color: var(--privy-color-foreground);
+}
+#privy-dialog label:has(> select + input[type="tel"]) > input[type="tel"],
+#privy-modal-content label:has(> select + input[type="tel"]) > input[type="tel"] {
+  padding-left: 114px;
+}
 
 /* Holders sign in over the member screens: Plate paper and ink (lib/signIn.ts sets data-signin). */
 html[data-signin="member"] #privy-dialog,
@@ -336,7 +393,11 @@ html[data-signin="member"] #privy-modal-content {
   --privy-color-border-default: #cdcdc8;
   --privy-color-border-interactive: #b4b4ae;
   --privy-color-border-focus: #161616;
-  --privy-color-success: #2f6b3a;
+  --privy-color-success: #161616;
+  --privy-color-success-dark: #000000;
+  --privy-color-success-light: #e5e5e2;
+  --privy-color-success-bg: rgba(22, 22, 22, 0.06);
+  --privy-color-border-success: #161616;
   --privy-color-error: #9a3a2c;
   --privy-color-icon-default: #161616;
   --privy-color-icon-muted: #66665f;
