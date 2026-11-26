@@ -107,7 +107,7 @@ export default function LabView({
         <VaultPhone keystone={keystone} items={items} />
       </Section>
 
-      <Section title="Arrange (Gallery tab)" href="/operator">
+      <Section title="Arrange (Gallery tab)" href="/manager">
         <ArrangeDemo keystone={keystone} items={items} />
       </Section>
 

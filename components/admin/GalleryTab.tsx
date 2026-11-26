@@ -44,6 +44,11 @@ async function measure(file: File): Promise<Measured> {
   }
 }
 
+/**
+ * Uploads each file straight to Pinata via a signed URL (Vercel caps a
+ * Function's request body at 4.5 MB, far under what photos, clips, audio
+ * notes and looping artwork allow), then saves the result.
+ */
 export async function uploadImages(
   authedFetch: ReturnType<typeof useAuthedFetch>,
   slug: string,
@@ -51,12 +56,35 @@ export async function uploadImages(
   target: "gallery" | "token",
   sizes?: Measured[]
 ): Promise<Keystone> {
-  const form = new FormData();
-  form.append("target", target);
-  files.forEach((f) => form.append("files", f));
-  form.append("sizes", JSON.stringify(sizes ?? (await Promise.all(files.map(measure)))));
-  const res = await authedFetch(`/api/admin/keystones/${slug}/images`, { method: "POST", body: form });
-  const data = await res.json();
+  const sz = sizes ?? (await Promise.all(files.map(measure)));
+
+  const items = await Promise.all(
+    files.map(async (file, i) => {
+      const signRes = await authedFetch(`/api/admin/keystones/${slug}/images/sign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, type: file.type, size: file.size, duration: sz[i]?.duration, target }),
+      });
+      const signData = await signRes.json().catch(() => ({}));
+      if (!signRes.ok) throw new Error(signData.error || "Upload failed");
+
+      const form = new FormData();
+      form.append("file", file);
+      form.append("network", signData.network);
+      const up = await fetch(signData.url, { method: "POST", body: form });
+      const upData = await up.json().catch(() => ({}));
+      if (!up.ok || !upData?.data?.cid) throw new Error("Upload failed");
+
+      return { cid: upData.data.cid, id: upData.data.id, type: file.type, name: file.name, width: sz[i]?.width, height: sz[i]?.height, duration: sz[i]?.duration };
+    })
+  );
+
+  const res = await authedFetch(`/api/admin/keystones/${slug}/images`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target, items }),
+  });
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Upload failed");
   return data as Keystone;
 }
@@ -118,23 +146,13 @@ export default function GalleryTab({
     const problems = files.map((f, i) => rejection(f, sizes[i])).filter(Boolean);
     if (problems.length) return setError(problems.join(" · "));
 
-    // Photos go up four at a time; clips and audio one by one, to keep each request small.
-    const batches: { files: File[]; sizes: Measured[] }[] = [];
-    files.forEach((f, i) => {
-      const lastBatch = batches[batches.length - 1];
-      if (uploadKind(f.type) === "image" && lastBatch && lastBatch.files.length < 4 && uploadKind(lastBatch.files[0].type) === "image") {
-        lastBatch.files.push(f);
-        lastBatch.sizes.push(sizes[i]);
-      } else batches.push({ files: [f], sizes: [sizes[i]] });
-    });
-
     let left = files.length;
     setUploading(left);
     try {
       let latest: Keystone | null = null;
-      for (const b of batches) {
-        latest = await uploadImages(authedFetch, keystone.slug, b.files, "gallery", b.sizes);
-        left -= b.files.length;
+      for (const [i, file] of files.entries()) {
+        latest = await uploadImages(authedFetch, keystone.slug, [file], "gallery", [sizes[i]]);
+        left -= 1;
         setUploading(left);
         onChange({ keystone: latest });
       }

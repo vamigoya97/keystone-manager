@@ -38,13 +38,25 @@ export default function MediaPicker({
     }
     setBusy(true);
     try {
+      const signRes = await authedFetch(endpoint ?? `/api/admin/keystones/${slug}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, type: file.type, size: file.size, slot }),
+      });
+      const signData = await signRes.json().catch(() => ({}));
+      if (!signRes.ok) throw new Error(signData.error || "Upload failed");
+
+      // Upload straight to Pinata from the browser: Vercel caps a Function's
+      // request body at 4.5 MB, well under the 20 MB this upload allows.
       const form = new FormData();
       form.append("file", file);
-      if (slot) form.append("slot", slot);
-      const res = await authedFetch(endpoint ?? `/api/admin/keystones/${slug}/media`, { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      onChange(data as ThemeMedia);
+      form.append("network", "public");
+      const up = await fetch(signData.url, { method: "POST", body: form });
+      const upData = await up.json().catch(() => ({}));
+      const cid = upData?.data?.cid;
+      if (!up.ok || !cid) throw new Error("Upload failed");
+
+      onChange({ src: `https://${signData.gateway}/ipfs/${cid}`, cid, kind: file.type.startsWith("video/") ? "video" : "image" });
     } catch (e: any) {
       setError(e.message);
     } finally {

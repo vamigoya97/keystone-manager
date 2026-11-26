@@ -13,7 +13,7 @@ import { getTapSession } from "@/lib/tap";
  *
  * Rules:
  *  - requires a claim session from a chip tap
- *  - one wallet per chip (operators can release a chip in /operator)
+ *  - one wallet per chip (operators can release a chip in /manager)
  *  - revoked members can't re-claim
  *  - idempotent for existing holders
  *  - one claim at a time per item and per wallet: the checks and the mint run

@@ -1,41 +1,43 @@
 import { randomBytes } from "crypto";
 import { handleAuthError, requireKeystoneOperator } from "@/lib/auth";
-import { GALLERY_LIMITS, QR_LIMITS, canBeWide, cleanQrText, cleanQrUrl, uploadKind } from "@/lib/gallery";
-import { MEDIA_MAX_BYTES, VIDEO_MAX_SECONDS } from "@/lib/theme";
+import { QR_LIMITS, canBeWide, cleanQrText, cleanQrUrl, uploadKind } from "@/lib/gallery";
 import type { GalleryItem } from "@/lib/keystones";
-import { pinImage } from "@/lib/pinata/upload";
-import { deletePrivate, resolveGallery, uploadPrivate } from "@/lib/pinata/private";
+import { gatewayUrl } from "@/lib/pinata/upload";
+import { deletePrivate, resolveGallery } from "@/lib/pinata/private";
 import { getKeystone, updateKeystone, canonicalSlug } from "@/lib/store";
 
 type Ctx = { params: Promise<{ slug: string }> };
 
-const MB = 1024 * 1024;
+type UploadedItem = { cid?: string; id?: string; type?: string; name?: string; width?: number; height?: number; duration?: number };
 
 /** Placeholder photos (no file behind them) are dropped the first time real items arrive. */
 const real = (g: GalleryItem) => !!g.cid || g.kind === "qr";
 
 /**
- * POST multipart:
- *   target = "gallery" | "token"
- *   files  = one or more photos, short clips (≤ 60 s) or audio notes (≤ 10 min). Token art is one
- *            image, or a looping video (MP4/WebM ≤ 15 s) followed by its still frame as an image
- *   sizes  = JSON [{ width, height, duration? }] in the same order (measured in the browser)
- * Gallery files go to Pinata's private network (holders get signed URLs);
- * token art is pinned publicly since everyone sees the pass.
- *
  * POST JSON { kind: "qr", url, label, text? } adds a QR code for a link; `text` goes on the card's front.
+ *
+ * POST JSON { target: "gallery" | "token", items } saves files the browser already uploaded straight
+ * to Pinata via a signed URL from `/images/sign` (Vercel caps a Function's request body at 4.5 MB, far
+ * under what photos, clips and audio notes allow). `items` is `{ cid, id?, type, name, width, height,
+ * duration? }[]`, one per uploaded file, in the same order sign requests were made. Gallery items went
+ * to Pinata's private network (`id` set, holders get signed URLs); token art went public (no `id`).
+ * Token art is one image, or a looping video (MP4/WebM ≤ 15 s) followed by its still frame as an image.
  */
 export async function POST(req: Request, { params }: Ctx) {
   try {
     const slug = await canonicalSlug((await params).slug);
-    const { user: operator } = await requireKeystoneOperator(req, slug);
-    if (!(await getKeystone(slug))) {
-      return Response.json({ error: "Not found" }, { status: 404 });
-    }
+    await requireKeystoneOperator(req, slug);
 
-    if (req.headers.get("content-type")?.includes("application/json")) {
-      const body = (await req.json().catch(() => ({}))) as { kind?: string; url?: unknown; label?: unknown; text?: unknown };
-      if (body.kind !== "qr") return Response.json({ error: "Unknown item" }, { status: 400 });
+    const body = (await req.json().catch(() => ({}))) as {
+      kind?: string;
+      url?: unknown;
+      label?: unknown;
+      text?: unknown;
+      target?: string;
+      items?: UploadedItem[];
+    };
+
+    if (body.kind === "qr") {
       const url = cleanQrUrl(body.url);
       if (!url) return Response.json({ error: `Enter a full http(s) link, up to ${QR_LIMITS.url} characters` }, { status: 400 });
       const label = (typeof body.label === "string" ? body.label.trim() : "").slice(0, QR_LIMITS.label) || new URL(url).hostname;
@@ -47,57 +49,31 @@ export async function POST(req: Request, { params }: Ctx) {
       return Response.json({ ...exp, gallery: await resolveGallery(exp.gallery) });
     }
 
-    const form = await req.formData();
-    const target = form.get("target") === "token" ? "token" : "gallery";
-    const files = form.getAll("files").filter((f): f is File => f instanceof File);
-    const sizes = JSON.parse(String(form.get("sizes") || "[]")) as { width: number; height: number; duration?: number }[];
-
-    if (files.length === 0) return Response.json({ error: "No files" }, { status: 400 });
-    const kinds = files.map((f) => uploadKind(f.type));
+    const target = body.target === "token" ? "token" : "gallery";
+    const items = Array.isArray(body.items) ? body.items : [];
+    if (items.length === 0) return Response.json({ error: "No files" }, { status: 400 });
+    const kinds = items.map((it) => (it.type ? uploadKind(it.type) : null));
+    if (items.some((it, i) => !kinds[i] || !it.cid)) return Response.json({ error: "Upload failed" }, { status: 400 });
     if (target === "token") {
       const video = kinds[0] === "video";
-      const ok = video ? files.length === 2 && kinds[1] === "image" && ["video/mp4", "video/webm"].includes(files[0].type) : files.length === 1 && kinds[0] === "image";
+      const ok = video ? items.length === 2 && kinds[1] === "image" && ["video/mp4", "video/webm"].includes(items[0].type!) : items.length === 1 && kinds[0] === "image";
       if (!ok) return Response.json({ error: "Artwork is one image, or an MP4/WebM loop with its still frame" }, { status: 400 });
-      if (video && (files[0].size > MEDIA_MAX_BYTES || (sizes[0]?.duration ?? 0) > VIDEO_MAX_SECONDS + 0.5)) {
-        return Response.json({ error: `Looping artwork must be up to ${VIDEO_MAX_SECONDS} s and ${MEDIA_MAX_BYTES / MB} MB` }, { status: 400 });
-      }
-    }
-    for (const [i, f] of files.entries()) {
-      const kind = kinds[i];
-      if (!kind) return Response.json({ error: `${f.name} isn't a supported photo, clip or audio file` }, { status: 400 });
-      const limit = GALLERY_LIMITS[kind];
-      if (f.size > limit.bytes) {
-        return Response.json({ error: `${f.name} is over ${limit.bytes / MB} MB` }, { status: 400 });
-      }
-      if ("seconds" in limit && (sizes[i]?.duration ?? 0) > limit.seconds + 0.5) {
-        return Response.json({ error: `${f.name} is longer than ${limit.seconds >= 60 ? `${limit.seconds / 60} min` : `${limit.seconds} s`}` }, { status: 400 });
-      }
     }
 
-    const pinned: GalleryItem[] = [];
-    for (const [i, file] of files.entries()) {
+    const pinned: GalleryItem[] = items.map((it, i) => {
       const kind = kinds[i]!;
-      const meta = {
-        keystone: slug,
-        role: target,
-        uploadedBy: operator.wallets[0] || operator.userId,
-      };
       const audio = kind === "audio";
       const base = {
         kind,
-        alt: file.name.replace(/\.[^.]+$/, ""),
-        width: audio ? 1 : sizes[i]?.width || 1200,
-        height: audio ? 1 : sizes[i]?.height || 1200,
-        ...(kind !== "image" && sizes[i]?.duration ? { duration: Math.round(sizes[i].duration! * 10) / 10 } : {}),
+        alt: (it.name || "").replace(/\.[^.]+$/, ""),
+        width: audio ? 1 : it.width || 1200,
+        height: audio ? 1 : it.height || 1200,
+        ...(kind !== "image" && it.duration ? { duration: Math.round(it.duration * 10) / 10 } : {}),
       };
-      if (target === "token") {
-        const { cid, url } = await pinImage(file, meta);
-        pinned.push({ ...base, src: url, cid });
-      } else {
-        const { id, cid } = await uploadPrivate(file, meta);
-        pinned.push({ ...base, src: `private:${cid}`, cid, private: true, pinataId: id });
-      }
-    }
+      return target === "token"
+        ? { ...base, src: gatewayUrl(it.cid!), cid: it.cid }
+        : { ...base, src: `private:${it.cid}`, cid: it.cid, private: true, pinataId: it.id };
+    });
 
     const exp = await updateKeystone(slug, (e) => {
       if (target === "token") {

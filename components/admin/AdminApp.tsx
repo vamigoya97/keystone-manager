@@ -61,7 +61,7 @@ type Tab = (typeof TABS)[number];
 const LOW_RUNWAY = 50;
 const OPERATOR_KEY = "operator.selected";
 
-/** The console at /operator: Privy sign-in and the operator check, then the console itself. */
+/** The console at /manager: Privy sign-in and the operator check, then the console itself. */
 export default function AdminApp() {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const [gate, setGate] = useState<{ status?: number; message: string } | null>(null);

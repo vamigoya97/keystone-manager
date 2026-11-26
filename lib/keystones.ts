@@ -5,7 +5,7 @@
  * private gallery. It can optionally carry dates and a location, for a
  * gathering or a season; without dates it's ongoing. Each keystone has one
  * link: /x/<slug> (claim), /x/<slug>/tap (chip landing, ?c=<chipId>&s=<sig>)
- * and /x/<slug>/gallery. Operators manage them at /operator.
+ * and /x/<slug>/gallery. Operators manage them at /manager.
  *
  * Safe to import on client and server — no secrets live here.
  */

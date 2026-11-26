@@ -32,28 +32,6 @@ function gateway(): string {
   return g.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
-export async function uploadPrivate(
-  file: File,
-  keyvalues: Record<string, string>
-): Promise<{ id: string; cid: string }> {
-  gateway(); // fail before uploading if files couldn't be served afterwards
-
-  const form = new FormData();
-  form.append("file", file);
-  form.append("network", "private");
-  form.append("name", file.name);
-  form.append("keyvalues", JSON.stringify(keyvalues));
-
-  const res = await fetch("https://uploads.pinata.cloud/v3/files", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${jwt()}` },
-    body: form,
-  });
-  if (!res.ok) throw new Error(`Pinata upload failed (${res.status}): ${await res.text()}`);
-  const { data } = (await res.json()) as { data: { id: string; cid: string } };
-  return { id: data.id, cid: data.cid };
-}
-
 export async function deletePrivate(id: string, cid?: string): Promise<void> {
   const res = await fetch(`${API}/files/private/${id}`, {
     method: "DELETE",
