@@ -48,7 +48,7 @@ export const PLATE: CSSProperties = {
 const page = "bg-[var(--p-page)] text-[var(--p-ink)] [font-family:var(--font-plate),system-ui,sans-serif] antialiased";
 
 /** Ink and rules for text set over a dark background color or media. */
-const ON_DARK = {
+export const ON_DARK = {
   ["--p-ink" as string]: "#F2F2F0",
   ["--p-slate" as string]: "rgba(242,242,240,0.66)",
   ["--p-rule" as string]: "rgba(242,242,240,0.2)",
@@ -969,7 +969,6 @@ export function PlateHome({
   contained = false,
   background,
   backHref,
-  operatorName,
 }: {
   state: "loading" | "signed-out" | "ready";
   keystones: MemberKeystone[];
@@ -978,7 +977,6 @@ export function PlateHome({
   contained?: boolean;
   background?: ThemeMedia;
   backHref?: string;
-  operatorName?: string;
 }) {
   const reduceMotion = useMotionReducedMotion();
 
@@ -987,7 +985,7 @@ export function PlateHome({
       <MemberBackground media={background} />
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
         <header className="flex min-h-16 items-center justify-between gap-4 px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))]">
-          <div><h1 className="sr-only">My Keystones</h1>{operatorName && <p className="mt-1 text-[12px] text-[var(--p-slate)]">{operatorName}</p>}</div>
+          <h1 className="sr-only">My Keystones</h1>
           {backHref && <Link href={backHref} aria-label="Back to Operators" className="flex h-11 w-11 shrink-0 items-center justify-center border border-current text-inherit hover:no-underline"><svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6"><path d="m12 5-7 7 7 7M5 12h14" /></svg></Link>}
         </header>
         {state === "signed-out" ? (
