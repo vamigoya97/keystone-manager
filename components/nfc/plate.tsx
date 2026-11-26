@@ -957,8 +957,8 @@ function HomeTile({ keystone: k }: { keystone: MemberKeystone }) {
 }
 
 /**
- * The member home: claimed keystones at their artwork's own shape, two
- * columns with space around them, each lifted by a soft shadow. Each opens its
+ * The member home: claimed keystones at their artwork's own shape, one
+ * centred column with space around them, each lifted by a soft shadow. Each opens its
  * vault. Signed out, one sentence and Sign in.
  */
 export function PlateHome({
@@ -999,13 +999,9 @@ export function PlateHome({
         ) : error ? (
           <p className="px-5 pt-16 text-[15px] leading-[1.6] text-[var(--p-alert)]">{error}</p>
         ) : state === "loading" ? (
-          <div className="grid grid-cols-2 items-start gap-4 px-4 pb-10" aria-busy>
-            {[0, 1].map((col) => (
-              <div key={col} className="flex flex-col gap-4">
-                {[0, 1].map((i) => (
-                  <div key={i} className="aspect-[4/5] bg-[var(--p-raised)]" />
-                ))}
-              </div>
+          <div className="mx-auto flex w-full max-w-[300px] flex-col gap-6 px-4 pb-10" aria-busy>
+            {[0, 1].map((i) => (
+              <div key={i} className="aspect-[4/5] bg-[var(--p-raised)]" />
             ))}
           </div>
         ) : keystones.length === 0 ? (
@@ -1013,24 +1009,17 @@ export function PlateHome({
             Nothing here yet. Hold your phone to an item to secure its keystone.
           </p>
         ) : (
-          // Two stacks, alternating left and right, so each artwork keeps its own
-          // proportions. (CSS columns split tiles across columns in Safari.)
-          <div className="grid grid-cols-2 items-start gap-4 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
-            {[0, 1].map((col) => (
-              <div key={col} className="flex flex-col gap-4">
-                {keystones.map((k, index) =>
-                  index % 2 === col ? (
-                    <motion.div
-                      key={k.slug}
-                      initial={reduceMotion ? false : { y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
-                    >
-                      <HomeTile keystone={k} />
-                    </motion.div>
-                  ) : null,
-                )}
-              </div>
+          // One column, centred, each artwork at its own proportions.
+          <div className="mx-auto flex w-full max-w-[300px] flex-col gap-6 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
+            {keystones.map((k, index) => (
+              <motion.div
+                key={k.slug}
+                initial={reduceMotion ? false : { y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
+              >
+                <HomeTile keystone={k} />
+              </motion.div>
             ))}
           </div>
         )}
