@@ -986,7 +986,6 @@ export function PlateHome({
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
         <header className="flex min-h-16 items-center justify-between gap-4 px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))]">
           <h1 className="sr-only">My Keystones</h1>
-          {backHref && <Link href={backHref} aria-label="Back to Operators" className="flex h-11 w-11 shrink-0 items-center justify-center border border-current text-inherit hover:no-underline"><svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6"><path d="m12 5-7 7 7 7M5 12h14" /></svg></Link>}
         </header>
         {state === "signed-out" ? (
           <div className="mt-auto px-5 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
@@ -1021,6 +1020,14 @@ export function PlateHome({
                 <HomeTile keystone={k} />
               </motion.div>
             ))}
+          </div>
+        )}
+        {/* Back sits bottom left, within thumb reach; sticky so it stays put while the column scrolls. */}
+        {backHref && (
+          <div className="pointer-events-none sticky bottom-0 mt-auto px-4 pb-[max(20px,calc(env(safe-area-inset-bottom)+12px))]">
+            <Link href={backHref} aria-label="Back to Operators" className="pointer-events-auto flex h-11 w-11 items-center justify-center border border-current bg-black/30 text-inherit backdrop-blur-sm hover:no-underline">
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
+            </Link>
           </div>
         )}
       </div>
