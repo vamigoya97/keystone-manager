@@ -12,8 +12,8 @@ import { useAuthedFetch } from "@/lib/useAccess";
 import { PLATE } from "./plate";
 
 /**
- * Member area: the home overview (/), operators (/operators) and one
- * operator's page (/o/<id>) share this data hook, shell and rows.
+ * Member area: the home overview (/), operators (/o) and one
+ * operator's page (/ko/<id>) share this data hook, shell and rows.
  */
 
 export type KeystoneStatus = "active" | "received" | "not-held" | "revoked" | "unknown";
@@ -80,7 +80,7 @@ const page = "bg-[var(--p-page)] text-[var(--p-ink)] [font-family:var(--font-pla
 
 const TABS = [
   { href: "/", label: "Home" },
-  { href: "/operators", label: "Operators" },
+  { href: "/o", label: "Operators" },
 ];
 
 /** Frame for the member area pages: header, tabs, and the signed-out/loading states. */
@@ -117,7 +117,7 @@ export function MemberShell({
               <nav aria-label="Your keystones" className="flex gap-6 border-b border-[var(--p-rule)] px-5">
                 {TABS.map((t) => {
                   const active =
-                    t.href === "/" ? pathname === "/" : pathname.startsWith(t.href) || (t.href === "/operators" && pathname.startsWith("/o/"));
+                    t.href === "/" ? pathname === "/" : pathname === t.href || pathname.startsWith(`${t.href}/`) || (t.href === "/o" && pathname.startsWith("/ko/"));
                   return (
                     <Link
                       key={t.href}
@@ -290,7 +290,7 @@ export function OperatorCard({ group }: { group: OperatorGroup }) {
 
   return (
     <Link
-      href={`/o/${group.operator.id}`}
+      href={`/ko/${group.operator.id}`}
       className={`flex items-center gap-4 bg-[var(--p-raised)] px-5 py-4 text-[var(--p-ink)] hover:no-underline focus-visible:outline-offset-[-2px] ${n ? "" : "opacity-60"}`}
     >
       <span

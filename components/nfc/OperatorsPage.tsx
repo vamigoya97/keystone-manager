@@ -50,7 +50,7 @@ export function OperatorsView({ keystones, background, selected, state, error, o
       ) : (
         <>
           <div id="operator-focus" role={groups.length > 1 ? "tabpanel" : undefined} className="flex flex-1 flex-col items-center justify-center gap-6 px-5 pt-[max(40px,calc(env(safe-area-inset-top)+24px))]">
-            <Link href={`/o/${encodeURIComponent(current.operator.id)}`} aria-label={`${current.operator.name}, ${current.active.length} keystone${current.active.length === 1 ? "" : "s"}`} className="tap-bump group block rounded-full text-inherit hover:no-underline focus-visible:outline-offset-4">
+            <Link href={`/ko/${encodeURIComponent(current.operator.id)}`} aria-label={`${current.operator.name}, ${current.active.length} keystone${current.active.length === 1 ? "" : "s"}`} className="tap-bump group block rounded-full text-inherit hover:no-underline focus-visible:outline-offset-4">
               <span className="flex aspect-square w-[min(232px,60vw)] items-center justify-center overflow-hidden rounded-full bg-white/5 text-[56px] shadow-[0_4px_12px_rgba(0,0,0,0.35),0_28px_70px_-10px_rgba(0,0,0,0.75)] transition-transform group-hover:scale-[1.02]">
                 {current.operator.appearance?.icon ? <MediaView media={current.operator.appearance.icon} className="h-full w-full object-cover" /> : current.operator.name.charAt(0).toUpperCase()}
               </span>

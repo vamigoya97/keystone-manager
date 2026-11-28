@@ -67,6 +67,14 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // Member routes were renamed: Operators /operators → /o, an operator's keystones
+  // /o/<id> → /ko/<id>. Old links and bookmarks still land (query strings carry over).
+  async redirects() {
+    return [
+      { source: "/operators", destination: "/o", permanent: false },
+      { source: "/o/:id", destination: "/ko/:id", permanent: false },
+    ];
+  },
 } satisfies NextConfig;
 
 export default withMotionStudio(nextConfig);

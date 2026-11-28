@@ -725,7 +725,7 @@ export function PlateVault({
             {myKeystones && (
               <div className="px-5 pt-10">
                 <Link
-                  href={`/o/${encodeURIComponent(keystone.operatorId)}`}
+                  href={`/ko/${encodeURIComponent(keystone.operatorId)}`}
                   className="flex h-12 w-full items-center justify-center rounded-full border border-current text-[15px] font-medium text-[var(--p-ink)] active:opacity-80 focus-visible:outline-offset-2"
                 >
                   My Keystones

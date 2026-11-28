@@ -15,7 +15,7 @@ export default function MemberHome() {
   const held = (keystones ?? []).filter(usable).sort((a, b) => (b.claimedAt ?? "").localeCompare(a.claimedAt ?? ""));
   const groups = groupOperators(held);
   const multiple = authenticated && groups.length > 1;
-  useEffect(() => { if (multiple) router.replace("/operators"); }, [multiple, router]);
+  useEffect(() => { if (multiple) router.replace("/o"); }, [multiple, router]);
   const operator = groups.length === 1 ? groups[0].operator : undefined;
   return <PlateHome state={!ready || multiple || (authenticated && keystones === null && !error) ? "loading" : authenticated ? "ready" : "signed-out"} keystones={held} error={authenticated ? error : null} onSignIn={() => signIn(login, "member")} background={operator?.appearance?.background} />;
 }
