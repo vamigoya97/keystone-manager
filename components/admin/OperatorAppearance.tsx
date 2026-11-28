@@ -129,8 +129,8 @@ export default function OperatorAppearance({ operator, keystones, onSaved }: { o
             ))
           )}
         </div>
-        <span aria-hidden className="pointer-events-none absolute bottom-3 right-3 flex size-8 items-center justify-center bg-black/30 text-[#F2F2F0] shadow-[0_8px_20px_-6px_rgba(0,0,0,0.6)]">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
+        <span aria-hidden className="pointer-events-none absolute bottom-3 right-3 flex size-8 items-center justify-center text-[#F2F2F0]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="size-5 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.55))_drop-shadow(0_3px_10px_rgba(0,0,0,0.45))]"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
         </span>
       </PreviewBlock>
     </>

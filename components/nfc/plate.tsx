@@ -1033,8 +1033,9 @@ export function PlateHome({
         {/* Back sits bottom right, within thumb reach; sticky so it stays put while the column scrolls. */}
         {backHref && (
           <div className="pointer-events-none sticky bottom-0 mt-auto flex justify-end px-4 pb-[max(20px,calc(env(safe-area-inset-bottom)+12px))]">
-            <Link href={backHref} aria-label="Back to Operators" className="pointer-events-auto flex h-11 w-11 items-center justify-center bg-black/30 text-inherit shadow-[0_2px_6px_rgba(0,0,0,0.3),0_12px_28px_-8px_rgba(0,0,0,0.6)] backdrop-blur-sm hover:no-underline">
-              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
+            {/* No fill or border: a larger, heavier arrow with a soft dark glow so it reads on any background. */}
+            <Link href={backHref} aria-label="Back to Operators" className="group pointer-events-auto flex h-12 w-12 items-center justify-center text-inherit hover:no-underline focus-visible:outline-offset-2">
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.55))_drop-shadow(0_4px_14px_rgba(0,0,0,0.45))] transition-transform duration-150 group-hover:-translate-x-0.5 motion-reduce:transition-none"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
             </Link>
           </div>
         )}
