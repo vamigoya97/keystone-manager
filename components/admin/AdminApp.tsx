@@ -131,6 +131,8 @@ export function OperatorConsole({
   const [gateError, setGateError] = useState<{ status?: number; message: string } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
+  /** The selected keystone's setup (name, tabs, tab content), scrolled to when one is picked. */
+  const setupRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<Tab>("Details");
   const [creating, setCreating] = useState(false);
   const [addingOperator, setAddingOperator] = useState(false);
@@ -252,13 +254,20 @@ export function OperatorConsole({
               selected={selected}
               onOperator={setOperatorId}
               onAddOperator={() => setAddingOperator(true)}
-              onSelect={(slug) => setSelected(slug)}
+              onSelect={(slug) => {
+                setSelected(slug);
+                // Bring the keystone's setup into view once it has rendered.
+                requestAnimationFrame(() => {
+                  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                  setupRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+                });
+              }}
               onCreate={() => setCreating(true)}
               onAppearanceSaved={(updated) => setOperators((ops) => ops?.map((op) => op.id === updated.id ? updated : op) ?? null)}
             />
 
             {current && (
-              <div>
+              <div ref={setupRef} className="scroll-mt-20">
                 <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <div className="text-sm text-muted-foreground">{operator.name}</div>
@@ -285,7 +294,7 @@ export function OperatorConsole({
                   <GalleryTab detail={detail} onChange={onChange} />
                 ) : tab === "Items" ? (
                   <ItemsTab
-                    key={current.slug}
+                    key={detail.keystone.slug}
                     detail={detail}
                     operator={operator}
                     keystones={operatorTokens}
@@ -296,9 +305,9 @@ export function OperatorConsole({
                 ) : tab === "Members" ? (
                   <MembersTab detail={detail} onChange={onChange} />
                 ) : tab === "Details" ? (
-                  <DetailsTab key={current.slug} detail={detail} onChange={onChange} />
+                  <DetailsTab key={detail.keystone.slug} detail={detail} onChange={onChange} />
                 ) : (
-                  <CustomizeTab key={current.slug} detail={detail} onChange={onChange} />
+                  <CustomizeTab key={detail.keystone.slug} detail={detail} onChange={onChange} />
                 )}
               </div>
             )}

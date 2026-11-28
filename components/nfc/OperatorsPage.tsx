@@ -52,10 +52,6 @@ export function OperatorsView({ keystones, background, selected, state, error, o
                 {current.operator.appearance?.icon ? <MediaView media={current.operator.appearance.icon} className="h-full w-full object-cover" /> : current.operator.name.charAt(0).toUpperCase()}
               </span>
             </Link>
-            <Link href={`/o/${encodeURIComponent(current.operator.id)}`} tabIndex={-1} aria-hidden className="flex h-11 items-center gap-2 rounded-full border border-white/50 bg-black/30 px-[18px] text-[14px] font-medium text-inherit hover:no-underline">
-              Open
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
-            </Link>
           </div>
           {groups.length > 1 && (
             <div role="tablist" aria-label="Operators" className="flex justify-center gap-[18px] px-5 pb-[max(44px,calc(env(safe-area-inset-bottom)+28px))]">

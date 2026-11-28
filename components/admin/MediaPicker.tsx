@@ -7,24 +7,16 @@ import { MEDIA_MAX_BYTES, MEDIA_TYPES, VIDEO_MAX_SECONDS } from "@/lib/theme";
 import { MediaView } from "@/components/nfc/themed";
 import { Button } from "./ui";
 
-/** Upload one image, GIF or short looping video to public IPFS for a customization slot. */
-export default function MediaPicker({
-  slug,
-  endpoint,
-  slot,
-  imageOnly = false,
-  media,
-  onChange,
-}: {
-  slug?: string;
-  endpoint?: string;
-  slot?: "icon" | "background";
-  imageOnly?: boolean;
-  media?: ThemeMedia;
-  onChange: (m: ThemeMedia | undefined) => void;
-}) {
+type UploadTarget = { slug?: string; endpoint?: string; slot?: "icon" | "background"; imageOnly?: boolean };
+
+export const acceptFor = (imageOnly: boolean) => MEDIA_TYPES.filter((t) => !imageOnly || t.startsWith("image/")).join(",");
+
+/**
+ * Checks a file, then uploads it to public IPFS for a customization slot and
+ * hands back the media. Shared by MediaPicker and the operator preview.
+ */
+export function useMediaUpload({ slug, endpoint, slot, imageOnly = false }: UploadTarget, onChange: (m: ThemeMedia) => void) {
   const authedFetch = useAuthedFetch();
-  const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +56,24 @@ export default function MediaPicker({
     }
   }
 
+  return { upload, busy, error, setError };
+}
+
+/** Upload one image, GIF or short looping video to public IPFS for a customization slot. */
+export default function MediaPicker({
+  slug,
+  endpoint,
+  slot,
+  imageOnly = false,
+  media,
+  onChange,
+}: UploadTarget & {
+  media?: ThemeMedia;
+  onChange: (m: ThemeMedia | undefined) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const { upload, busy, error } = useMediaUpload({ slug, endpoint, slot, imageOnly }, onChange);
+
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -73,7 +83,7 @@ export default function MediaPicker({
         <input
           ref={input}
           type="file"
-          accept={MEDIA_TYPES.filter((t) => !imageOnly || t.startsWith("image/")).join(",")}
+          accept={acceptFor(imageOnly)}
           hidden
           onChange={(e) => {
             const f = e.target.files?.[0];

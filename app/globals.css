@@ -288,75 +288,108 @@ html, body {
   .console-progress { animation: none; width: 100%; opacity: 0.4; }
 }
 
-/* Keystone · Smoke · square glass, shared across Privy login screens. */
+/* Keystone · Glass sheet sign-in (canvas option A), shared across Privy login screens.
+   Privy's documented theme variables (docs.privy.io, configuring appearance) set
+   the palette and radii; the sheet is frosted dark glass over whatever page is
+   behind it (an operator's background on member pages), with one white action.
+   Logo, header and message are set in app/providers.tsx. */
 #privy-dialog,
 #privy-modal-content {
   color-scheme: dark;
-  --glass-frost: 0.2;
-  --glass-saturation: 2;
-  --filter-id: blur(40px);
-  --keystone-glass-tint: 16 21 20;
-  --keystone-ink: #f1f2e8;
-  --keystone-control-opacity: 0.02;
-  --keystone-inset: inset 0 0 2px 1px rgb(241 242 232 / 0.7), inset 0 0 10px 4px rgb(241 242 232 / 0.4), inset 0 4px 16px #11111a0d, inset 0 8px 24px #11111a0d, inset 0 6px 56px #11111a0d;
-  --privy-color-background: rgb(16 21 20 / 0.02);
-  --privy-color-background-2: rgb(16 21 20 / 0.02);
-  --privy-color-background-3: rgb(16 21 20 / 0.02);
-  --privy-color-foreground: #f1f2e8;
-  --privy-color-foreground-2: #f1f2e8;
-  --privy-color-foreground-3: #f1f2e8;
-  --privy-color-foreground-4: #f1f2e8;
-  --privy-color-foreground-accent: #f1f2e8;
-  --privy-color-border-default: #f1f2e8;
-  --privy-color-border-interactive: #f1f2e8;
-  --privy-color-border-focus: #f1f2e8;
-  --privy-color-accent: #f1f2e8;
-  --privy-color-accent-light: #f1f2e8;
-  --privy-color-accent-dark: #f1f2e8;
-  --privy-color-error: #ffc1c1;
-  --privy-color-error-dark: #ffc1c1;
-  --privy-color-error-light: #ffc1c1;
-  --privy-color-error-bg: rgb(255 193 193 / 0.12);
-  --privy-color-border-error: #ffc1c1;
+  --keystone-ink: #ffffff;
+  --keystone-glass: rgb(20 20 20 / 0.55);
+  --keystone-hairline: rgb(255 255 255 / 0.18);
+  --privy-color-background: var(--keystone-glass);
+  --privy-color-background-2: rgb(255 255 255 / 0.08);
+  --privy-color-background-3: rgb(255 255 255 / 0.1);
+  --privy-color-foreground: var(--keystone-ink);
+  --privy-color-foreground-2: rgb(255 255 255 / 0.75);
+  --privy-color-foreground-3: rgb(255 255 255 / 0.55);
+  --privy-color-foreground-4: rgb(255 255 255 / 0.2);
+  --privy-color-foreground-accent: #111111;
+  --privy-color-border-default: var(--keystone-hairline);
+  --privy-color-border-interactive: rgb(255 255 255 / 0.4);
+  --privy-color-border-focus: rgb(255 255 255 / 0.7);
+  --privy-color-accent: var(--keystone-ink);
+  --privy-color-accent-light: rgb(255 255 255 / 0.86);
+  --privy-color-accent-lightest: rgb(255 255 255 / 0.12);
+  --privy-color-accent-dark: #ffffff;
+  --privy-color-accent-darkest: #ffffff;
+  --privy-color-error: #f0a595;
+  --privy-color-error-dark: #f0a595;
+  --privy-color-error-light: rgb(240 165 149 / 0.14);
+  --privy-color-error-bg: rgb(240 165 149 / 0.12);
+  --privy-color-border-error: #f0a595;
   --privy-color-success: #baf5c8;
   --privy-color-success-dark: #baf5c8;
-  --privy-color-success-light: #baf5c8;
+  --privy-color-success-light: rgb(186 245 200 / 0.14);
   --privy-color-success-bg: rgb(186 245 200 / 0.12);
   --privy-color-border-success: #baf5c8;
-  --privy-border-radius-xs: 0px;
-  --privy-border-radius-sm: 0px;
-  --privy-border-radius-md: 0px;
-  --privy-border-radius-mdlg: 0px;
-  --privy-border-radius-lg: 0px;
+  --privy-border-radius-xs: 8px;
+  --privy-border-radius-sm: 10px;
+  --privy-border-radius-md: 14px;
+  --privy-border-radius-mdlg: 18px;
+  --privy-border-radius-lg: 24px;
   font-family: var(--font-plate), system-ui, sans-serif;
 }
 #privy-dialog * { font-family: inherit; }
 #privy-dialog #privy-modal-content {
   color: var(--keystone-ink);
-  background: rgb(var(--keystone-glass-tint) / var(--glass-frost));
-  -webkit-backdrop-filter: var(--filter-id) saturate(var(--glass-saturation));
-  backdrop-filter: var(--filter-id) saturate(var(--glass-saturation));
-  border: 1px solid var(--keystone-ink);
-  border-radius: 0;
-  box-shadow: var(--keystone-inset);
+  background: var(--keystone-glass);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(28px) saturate(1.5);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
 }
+/* Phones: Privy docks the modal to the bottom; round only the top, like a sheet. */
+@media (max-width: 440px) {
+  #privy-dialog #privy-modal-content {
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+  }
+}
+/* Fields and secondary buttons: frosted, hairline. */
 #privy-modal-content :is(button, input, select, label:has(input)) {
   color: var(--keystone-ink);
-  border-radius: 0;
-  border-color: currentColor;
-  background-color: rgb(var(--keystone-glass-tint) / var(--keystone-control-opacity));
-  box-shadow: var(--keystone-inset);
+  border-color: var(--keystone-hairline);
+  background-color: rgb(255 255 255 / 0.08);
+  box-shadow: none;
 }
-#privy-modal-content input::placeholder { color: var(--keystone-ink); opacity: 1; }
+#privy-modal-content :is(input, label:has(input)) { border-radius: 14px; }
+#privy-modal-content :is(input, label:has(input)):focus-within {
+  border-color: rgb(255 255 255 / 0.7);
+}
+#privy-modal-content label:has(input) input { background-color: transparent; }
+#privy-modal-content input::placeholder { color: var(--privy-color-foreground-3); opacity: 1; }
+/* The one action per step (Submit, Continue): solid white. */
+#privy-modal-content [class*="StyledEmbeddedButton-"],
+#privy-modal-content [class*="PrimaryButton-"] {
+  background-color: #ffffff;
+  color: #111111;
+  border-color: #ffffff;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+#privy-modal-content [class*="LoginMethodButton-"] { border-radius: 14px; }
+#privy-modal-content [class*="LoginMethodButton-"]:hover { border-color: rgb(255 255 255 / 0.4); background-color: rgb(255 255 255 / 0.12); }
+#privy-modal-content [class*="LoginMethodIconWrapper-"] { border-radius: 10px; background-color: rgb(255 255 255 / 0.1); }
+/* Close and back: just the glyph. */
+#privy-modal-content :is([class*="RightActionContainer-"], [class*="LeftActionContainer-"]) button { border-color: transparent; background-color: transparent; color: var(--privy-color-foreground-2); }
+#privy-modal-content :is([class*="RightActionContainer-"], [class*="LeftActionContainer-"]) button:hover { color: var(--keystone-ink); }
+#privy-modal-content [class*="HeaderTitle-"] { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+#privy-modal-content [class*="HelpTextContainer-"],
+#privy-modal-content [class*="ModalFooter-"] { color: var(--privy-color-foreground-3); }
 
 /* Shorter sheet: tighter header, gaps and footer than Privy's defaults. */
 #privy-modal-content [class*="ScreenRootInner-"] {
-  background: transparent; /* Privy paints it solid, which would hide the frosted sheet */
+  background: transparent;
   gap: 14px;
   padding-top: 8px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
-/* Privy fades the login list's edges with solid gradients; on glass they show as a band. */
+/* Privy fades the login list's edges with gradients; on the sheet they show as a band. */
 #privy-modal-content [class*="LoginMethodContainer-"] {
   background-image: none;
 }

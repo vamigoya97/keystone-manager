@@ -11,12 +11,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         // Both methods are allowed for the app; each sign-in button opens the modal with
         // only its audience's method (lib/signIn.ts): SMS for holders, email for operators.
         loginMethods: ["sms", "email"],
-        // Neutral and dark, like the member screens and the console. The finer palette,
-        // radii and typeface are CSS variables in app/globals.css (#privy-dialog).
+        // Glass sheet (canvas option A): frosted dark over the page, one white action.
+        // The finer palette, radii and typeface are Privy's CSS variables in
+        // app/globals.css (#privy-dialog).
         appearance: {
-          theme: "#0c0c0b",
-          accentColor: "#f2f1ec",
-          landingHeader: "Sign in",
+          theme: "#141414",
+          accentColor: "#FFFFFF",
+          // PNG at 2:1, as Privy asks; the keystone mark from the claim screen.
+          logo: "/keystone-signin.png",
+          landingHeader: "Welcome to your keystones",
+          loginMessage: "No password. We send you a one-time code.",
           showWalletLoginFirst: false,
           walletList: [],
         },

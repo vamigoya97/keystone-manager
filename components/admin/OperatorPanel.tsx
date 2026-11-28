@@ -74,45 +74,47 @@ export default function OperatorPanel({
 
   return (
     <Panel>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex">
         <OperatorPicker operators={operators} value={operator.id} keystones={allKeystones} onChange={onOperator} onAdd={onAddOperator} />
-        <div className="ml-auto flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={view}
-            onValueChange={(v) => v && pickView(v as View)}
-            aria-label="Show keystones as"
-          >
-            <ToggleGroupItem value="list" aria-label="List">
-              <ListIcon />
-              List
-            </ToggleGroupItem>
-            <ToggleGroupItem value="icons" aria-label="Icons">
-              <LayoutGridIcon />
-              Icons
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <UiButton size="sm" onClick={onCreate}>
+      </div>
+
+      {/* The two member previews, then the keystones in one column beside them. */}
+      <div className="mt-5 flex flex-wrap items-start gap-5">
+        <OperatorAppearance key={operator.id} operator={operator} keystones={sorted} onSaved={onAppearanceSaved} />
+
+        <section aria-labelledby="operator-keystones" className="flex min-w-[280px] flex-1 flex-col gap-3 rounded-xl border bg-white/[0.03] p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="operator-keystones" className="text-[15px] font-semibold">Keystones</h2>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={view}
+              onValueChange={(v) => v && pickView(v as View)}
+              aria-label="Show keystones as"
+            >
+              <ToggleGroupItem value="list" aria-label="List">
+                <ListIcon />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="icons" aria-label="Icons">
+                <LayoutGridIcon />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <UiButton onClick={onCreate} className="w-full">
             <PlusIcon />
             New keystone
           </UiButton>
-        </div>
-      </div>
-
-      <OperatorAppearance key={operator.id} operator={operator} onSaved={onAppearanceSaved} />
-
-      <div className="mt-5">
-        {keystones.length === 0 ? (
-          <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-            {operator.name} hasn&apos;t issued a keystone yet.
-          </p>
-        ) : view === "list" ? (
-          <ListView items={sorted} selected={selected} onSelect={onSelect} />
-        ) : (
-          <IconView items={sorted} selected={selected} onSelect={onSelect} />
-        )}
+          {keystones.length === 0 ? (
+            <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+              {operator.name} hasn&apos;t issued a keystone yet.
+            </p>
+          ) : view === "list" ? (
+            <ListView items={sorted} selected={selected} onSelect={onSelect} />
+          ) : (
+            <IconView items={sorted} selected={selected} onSelect={onSelect} />
+          )}
+        </section>
       </div>
     </Panel>
   );
@@ -235,7 +237,7 @@ function ListView({ items, selected, onSelect }: { items: AdminKeystone[]; selec
 function IconView({ items, selected, onSelect }: { items: AdminKeystone[]; selected: string | null; onSelect: (slug: string) => void }) {
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-3">
         {items.map((e) => (
           <button
             key={e.slug}
