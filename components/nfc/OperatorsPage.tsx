@@ -57,7 +57,7 @@ export function OperatorsView({ keystones, background, selected, state, error, o
             </Link>
           </div>
           {groups.length > 1 && (
-            <div role="tablist" aria-label="Operators" className="flex justify-center gap-[18px] px-5 pb-[max(44px,calc(env(safe-area-inset-bottom)+28px))]">
+            <div role="tablist" aria-label="Operators" className="flex items-center justify-center gap-[10px] px-5 pb-[max(44px,calc(env(safe-area-inset-bottom)+28px))]">
               {groups.map(({ operator }, i) => {
                 const selected = operator.id === current.operator.id;
                 return (
@@ -72,9 +72,10 @@ export function OperatorsView({ keystones, background, selected, state, error, o
                     tabIndex={selected ? 0 : -1}
                     onClick={() => setPickedId(operator.id)}
                     onKeyDown={(e) => { if (e.key === "ArrowRight") pick(i + 1); else if (e.key === "ArrowLeft") pick(i - 1); }}
-                    className={`grid size-16 place-items-center rounded-full border-2 transition-opacity ${selected ? "border-current opacity-100" : "border-transparent opacity-60 hover:opacity-90"}`}
+                    className={`grid size-[72px] place-items-center rounded-full transition-opacity focus-visible:outline-offset-2 ${selected ? "opacity-100" : "opacity-60 hover:opacity-90"}`}
                   >
-                    <span className="flex size-[54px] items-center justify-center overflow-hidden rounded-full bg-white/10 text-[20px] shadow-[0_2px_6px_rgba(0,0,0,0.35),0_10px_24px_-6px_rgba(0,0,0,0.6)]">
+                    {/* The selected operator shows larger instead of ringed. */}
+                    <span className={`flex items-center justify-center overflow-hidden rounded-full bg-white/10 text-[20px] shadow-[0_2px_6px_rgba(0,0,0,0.35),0_10px_24px_-6px_rgba(0,0,0,0.6)] transition-[width,height] duration-200 ease-out motion-reduce:transition-none ${selected ? "size-[68px]" : "size-[48px]"}`}>
                       {operator.appearance?.icon ? <MediaView media={operator.appearance.icon} className="h-full w-full object-cover" /> : operator.name.charAt(0).toUpperCase()}
                     </span>
                   </button>
