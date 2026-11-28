@@ -1,5 +1,6 @@
 "use client";
 
+import GlowBars from "@/components/GlowBars";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { signIn } from "@/lib/signIn";
@@ -11,7 +12,7 @@ import {
   type Operator,
 } from "@/lib/keystones";
 import type { PassContent, PassMetadata } from "@/lib/passMetadata";
-import { CheckCircle2Icon, ChevronDownIcon, CopyIcon, ExternalLinkIcon, Loader2Icon, LogOutIcon, MailIcon } from "lucide-react";
+import { CheckCircle2Icon, ChevronDownIcon, CopyIcon, ExternalLinkIcon, LogOutIcon, MailIcon } from "lucide-react";
 import { Button as UiButton } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -289,7 +290,7 @@ export function OperatorConsole({
                 </div>
 
                 {!detail ? (
-                  <div className="h-64 animate-pulse rounded-xl bg-muted" />
+                  <div className="flex h-64 items-center justify-center rounded-xl border text-muted-foreground"><GlowBars /></div>
                 ) : tab === "Gallery" ? (
                   <GalleryTab detail={detail} onChange={onChange} />
                 ) : tab === "Items" ? (
@@ -567,7 +568,7 @@ function SignInCard({ onSignIn }: { onSignIn?: () => void }) {
             Continue with email
           </>
         ) : (
-          <Loader2Icon className="animate-spin" />
+          <GlowBars size="sm" label={undefined} />
         )}
       </Button>
     </div>
@@ -591,12 +592,12 @@ function Opening({ email }: { email?: string }) {
           </span>
         </li>
         <li className="flex items-center gap-3">
-          <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+          <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground"><GlowBars size="sm" decorative /></span>
           <span>Checking access and loading keystones…</span>
         </li>
       </ol>
-      <div className="mt-4 h-0.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-        <div className="console-progress h-full w-1/3 rounded-full bg-foreground/60" />
+      <div className="mt-10 flex justify-center text-foreground/70" aria-hidden>
+        <GlowBars size="md" decorative />
       </div>
     </div>
   );

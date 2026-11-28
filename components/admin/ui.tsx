@@ -1,7 +1,7 @@
 "use client";
 
+import GlowBars from "@/components/GlowBars";
 import { createContext, useCallback, useContext, useState } from "react";
-import { Loader2Icon } from "lucide-react";
 import { useAuthedFetch } from "@/lib/useAccess";
 import { cn } from "@/lib/utils";
 import { Alert as UiAlert, AlertDescription } from "@/components/ui/alert";
@@ -107,7 +107,7 @@ export function Button({ variant = "ghost", busy, children, className = "", disa
       disabled={disabled || busy}
       className={cn(variant === "danger" && "text-destructive hover:text-destructive", className)}
     >
-      {busy && <Loader2Icon className="animate-spin" />}
+      {busy && <GlowBars size="sm" decorative />}
       {children}
     </UiButton>
   );

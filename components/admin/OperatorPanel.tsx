@@ -101,10 +101,6 @@ export default function OperatorPanel({
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <UiButton onClick={onCreate} className="w-full">
-            <PlusIcon />
-            New keystone
-          </UiButton>
           {keystones.length === 0 ? (
             <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
               {operator.name} hasn&apos;t issued a keystone yet.
@@ -114,6 +110,10 @@ export default function OperatorPanel({
           ) : (
             <IconView items={sorted} selected={selected} onSelect={onSelect} />
           )}
+          <UiButton onClick={onCreate} className="w-full">
+            <PlusIcon />
+            New keystone
+          </UiButton>
         </section>
       </div>
     </Panel>

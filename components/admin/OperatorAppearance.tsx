@@ -1,8 +1,9 @@
 "use client";
 
+import GlowBars from "@/components/GlowBars";
 import { useRef, useState, type DragEvent } from "react";
-import { Loader2Icon, UploadIcon, XIcon } from "lucide-react";
-import type { Keystone, Operator } from "@/lib/keystones";
+import { UploadIcon, XIcon } from "lucide-react";
+import type { Keystone, Operator, ThemeMedia } from "@/lib/keystones";
 import TokenCard from "@/components/nfc/TokenCard";
 import { MEDIA_MAX_BYTES, VIDEO_MAX_SECONDS } from "@/lib/theme";
 import { MediaView } from "@/components/nfc/themed";
@@ -15,52 +16,61 @@ const PHONE = "relative h-[460px] w-[252px] overflow-hidden rounded-[28px] bg-[#
  * Operator-wide artwork, independent of the theme on any single keystone, as two
  * member previews that are also the editors: Main Menu (Operators) and this
  * operator's My Keystones page. Click or drop onto the circle for the round
- * icon, anywhere else for the background (shared by both pages).
+ * icon, anywhere else for that page's background. Operators falls back to the
+ * My Keystones background until it has one of its own.
  */
 export default function OperatorAppearance({ operator, keystones, onSaved }: { operator: Operator; keystones: Omit<Keystone, "gallery">[]; onSaved: (op: Operator) => void }) {
   const api = useAdminApi();
   const [icon, setIcon] = useState(operator.appearance?.icon);
   const [background, setBackground] = useState(operator.appearance?.background);
+  // Operators (Main Menu) background; when unset, Operators shows the My Keystones one.
+  const [menuBackground, setMenuBackground] = useState(operator.appearance?.menuBackground);
   const [busy, setBusy] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const dirty = icon?.src !== operator.appearance?.icon?.src || background?.src !== operator.appearance?.background?.src;
+  const saved = operator.appearance;
+  const dirty = icon?.src !== saved?.icon?.src || background?.src !== saved?.background?.src || menuBackground?.src !== saved?.menuBackground?.src;
 
   const endpoint = `/api/admin/operators/${encodeURIComponent(operator.id)}/media`;
   const iconUpload = useMediaUpload({ endpoint, slot: "icon", imageOnly: true }, (m) => { setIcon(m); setSaveError(""); });
   const bgUpload = useMediaUpload({ endpoint, slot: "background" }, (m) => { setBackground(m); setSaveError(""); });
-  const error = iconUpload.error || bgUpload.error || saveError;
+  const menuUpload = useMediaUpload({ endpoint, slot: "background" }, (m) => { setMenuBackground(m); setSaveError(""); });
+  const error = iconUpload.error || bgUpload.error || menuUpload.error || saveError;
 
   async function save() {
     setBusy(true); setSaveError("");
     try {
-      const updated = await api<Operator>(`/api/admin/operators/${encodeURIComponent(operator.id)}`, { method: "PATCH", json: { appearance: { icon: icon ?? null, background: background ?? null } } });
+      const updated = await api<Operator>(`/api/admin/operators/${encodeURIComponent(operator.id)}`, { method: "PATCH", json: { appearance: { icon: icon ?? null, background: background ?? null, menuBackground: menuBackground ?? null } } });
       onSaved(updated);
     } catch (err) { setSaveError(err instanceof Error ? err.message : "Could not save appearance"); }
     finally { setBusy(false); }
   }
   function reset() {
-    setIcon(operator.appearance?.icon); setBackground(operator.appearance?.background);
-    setSaveError(""); iconUpload.setError(null); bgUpload.setError(null);
+    setIcon(saved?.icon); setBackground(saved?.background); setMenuBackground(saved?.menuBackground);
+    setSaveError(""); iconUpload.setError(null); bgUpload.setError(null); menuUpload.setError(null);
   }
 
   const status = error || (dirty ? "Unsaved changes" : "Saved");
   const statusTone = error ? "text-rose" : dirty ? "text-amber" : "text-muted-foreground";
   const actions = (
     <>
-      <Button variant="primary" busy={busy} disabled={!dirty || iconUpload.busy || bgUpload.busy} onClick={save} className="flex-1">Save appearance</Button>
+      <Button variant="primary" busy={busy} disabled={!dirty || iconUpload.busy || bgUpload.busy || menuUpload.busy} onClick={save} className="flex-1">Save appearance</Button>
       <Button disabled={!dirty || busy} onClick={reset}>Reset</Button>
     </>
   );
-  const backgroundSlot = (hint: string) => (
+  /** A preview's background: what members see, and the drop target that sets this page's own media. */
+  const backgroundSlot = ({ shown, own, upload, onRemove, label, emptyHint, hint }: {
+    shown?: ThemeMedia; own?: ThemeMedia; upload: ReturnType<typeof useMediaUpload>; onRemove: () => void; label: string; emptyHint?: string; hint: string;
+  }) => (
     <>
-      {background && <MediaView media={background} className="pointer-events-none absolute inset-0 h-full w-full object-cover" />}
+      {shown && <MediaView key={shown.src} media={shown} className="pointer-events-none absolute inset-0 h-full w-full object-cover" />}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0E0E0E]/40 via-transparent to-[#0E0E0E]/90" />
       <DropTarget
-        label="background"
-        hasMedia={!!background}
+        label={label}
+        hasMedia={!!own}
+        emptyHint={emptyHint}
         accept={acceptFor(false)}
-        upload={bgUpload}
-        onRemove={() => setBackground(undefined)}
+        upload={upload}
+        onRemove={onRemove}
         className="absolute inset-0"
         hintClassName={hint}
         removeClassName="right-3 top-3"
@@ -71,7 +81,16 @@ export default function OperatorAppearance({ operator, keystones, onSaved }: { o
   return (
     <>
       <PreviewBlock id="appearance-main-menu" title="Main Menu Appearance" caption="Member preview · Operators" withIcon status={status} statusTone={statusTone} actions={actions}>
-        {backgroundSlot("bottom-4 left-1/2 -translate-x-1/2")}
+        {backgroundSlot({
+          shown: menuBackground ?? background,
+          own: menuBackground,
+          upload: menuUpload,
+          onRemove: () => setMenuBackground(undefined),
+          label: "Operators background",
+          // Nothing of its own yet: it borrows the My Keystones background.
+          emptyHint: background ? "Same as My Keystones · Upload own" : undefined,
+          hint: "bottom-4 left-1/2 -translate-x-1/2",
+        })}
         {/* Round icon: sits over the background, like on Operators. */}
         <DropTarget
           label="round icon"
@@ -83,27 +102,34 @@ export default function OperatorAppearance({ operator, keystones, onSaved }: { o
           hintClassName="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           removeClassName="-right-1 top-1"
         >
-          <span className="flex size-full items-center justify-center overflow-hidden rounded-full border border-[#F2F2F0] bg-white/5">
+          <span className="flex size-full items-center justify-center overflow-hidden rounded-full bg-white/5 shadow-[0_4px_12px_rgba(0,0,0,0.35),0_20px_50px_-10px_rgba(0,0,0,0.75)]">
             {icon && <MediaView media={icon} className="h-full w-full object-cover" />}
           </span>
         </DropTarget>
       </PreviewBlock>
 
       <PreviewBlock id="appearance-my-keystones" title="My Keystones Appearance" caption="Member preview · My Keystones" status={status} statusTone={statusTone} actions={actions}>
-        {backgroundSlot("left-1/2 top-4 -translate-x-1/2")}
-        {/* The page as members see it: one column of keystones, back arrow bottom left. */}
+        {backgroundSlot({
+          shown: background,
+          own: background,
+          upload: bgUpload,
+          onRemove: () => setBackground(undefined),
+          label: "My Keystones background",
+          hint: "left-1/2 top-4 -translate-x-1/2",
+        })}
+        {/* The page as members see it: one column of keystones, back arrow bottom right. */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-14 bottom-0 flex flex-col items-center gap-4 overflow-hidden">
           {keystones.length === 0 ? (
             <p className="mt-16 px-6 text-center text-[12px] text-[#F2F2F0]/70">No keystones yet</p>
           ) : (
             keystones.slice(0, 3).map((k) => (
-              <div key={k.slug} className="w-[186px] shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.08),0_6px_16px_-4px_rgba(0,0,0,0.14)]">
+              <div key={k.slug} className="w-[150px] shrink-0 overflow-hidden rounded-[7px] shadow-[0_2px_6px_rgba(0,0,0,0.22),0_14px_30px_-8px_rgba(0,0,0,0.6)]">
                 <TokenCard keystone={k} />
               </div>
             ))
           )}
         </div>
-        <span aria-hidden className="pointer-events-none absolute bottom-3 left-3 flex size-8 items-center justify-center border border-[#F2F2F0] bg-black/30 text-[#F2F2F0]">
+        <span aria-hidden className="pointer-events-none absolute bottom-3 right-3 flex size-8 items-center justify-center bg-black/30 text-[#F2F2F0] shadow-[0_8px_20px_-6px_rgba(0,0,0,0.6)]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-4"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
         </span>
       </PreviewBlock>
@@ -150,6 +176,7 @@ function PreviewBlock({ id, title, caption, withIcon = false, status, statusTone
 function DropTarget({
   label,
   hasMedia,
+  emptyHint,
   accept,
   upload,
   onRemove,
@@ -160,6 +187,8 @@ function DropTarget({
 }: {
   label: string;
   hasMedia: boolean;
+  /** Shown instead of "Upload <label>" while the slot is empty. */
+  emptyHint?: string;
   accept: string;
   upload: ReturnType<typeof useMediaUpload>;
   onRemove: () => void;
@@ -194,8 +223,8 @@ function DropTarget({
         <span
           className={`pointer-events-none absolute flex items-center gap-1.5 whitespace-nowrap rounded-full bg-black/70 px-2.5 py-1 font-sans text-[11px] font-medium text-white transition-opacity ${hintClassName} ${upload.busy || dragging || !hasMedia ? "opacity-100" : "opacity-0 group-hover/slot:opacity-100 group-focus-within/slot:opacity-100"}`}
         >
-          {upload.busy ? <Loader2Icon className="size-3 animate-spin" /> : <UploadIcon className="size-3" />}
-          {upload.busy ? "Uploading…" : dragging ? `Drop for ${label}` : `${hasMedia ? "Replace" : "Upload"} ${label}`}
+          {upload.busy ? <GlowBars size="sm" decorative /> : <UploadIcon className="size-3" />}
+          {upload.busy ? "Uploading…" : dragging ? `Drop for ${label}` : hasMedia ? `Replace ${label}` : emptyHint ?? `Upload ${label}`}
         </span>
       </button>
       {hasMedia && !upload.busy && (

@@ -28,7 +28,10 @@ export interface Operator {
 /** Public artwork for the operator picker and their member keystone list. */
 export interface OperatorAppearance {
   icon?: ThemeMedia;
+  /** Behind this operator's My Keystones page (and Operators, unless menuBackground is set). */
   background?: ThemeMedia;
+  /** Behind this operator on the Operators page (Main Menu). Missing → background. */
+  menuBackground?: ThemeMedia;
 }
 
 export const OPERATOR_ID_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;

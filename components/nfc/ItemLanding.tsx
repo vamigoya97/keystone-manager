@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
+import GlowBars from "@/components/GlowBars";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
@@ -194,7 +195,7 @@ export default function ItemLanding({ batch, tap }: { batch: string; tap: TapPar
                 {state === "held" || state === "claimed" ? (
                   <span className="text-accent">{state === "held" ? "Yours" : "Secured ✓"}</span>
                 ) : state === "claiming" ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                  <GlowBars size="sm" label={undefined} className="text-accent" />
                 ) : state === "error" ? (
                   <span className="text-rose">Failed</span>
                 ) : null}
@@ -220,7 +221,7 @@ export default function ItemLanding({ batch, tap }: { batch: string; tap: TapPar
             }}
             className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15px] font-semibold tracking-wide text-surface transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-80"
           >
-            {claiming && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+            {claiming && <GlowBars size="sm" decorative />}
             {claiming ? "Securing…" : authenticated ? label : `Sign in to ${label.toLowerCase()}`}
           </button>
         )}

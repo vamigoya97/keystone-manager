@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
+import GlowBars from "@/components/GlowBars";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -105,9 +106,8 @@ export function MemberShell({
         </header>
 
         {!ready ? (
-          <div className="flex flex-1 items-center justify-center" role="status">
-            <PlateSpinner />
-            <span className="sr-only">Loading</span>
+          <div className="flex flex-1 items-center justify-center">
+            <GlowBars size="lg" />
           </div>
         ) : !authenticated ? (
           <SignedOut onSignIn={() => signIn(login, "member")} />
@@ -141,9 +141,9 @@ export function MemberShell({
   );
 }
 
-/** The Plate spinner: a thin slate ring, like the slide button's knob while it works. */
-export function PlateSpinner({ className = "h-5 w-5" }: { className?: string }) {
-  return <span aria-hidden className={`${className} animate-spin rounded-full border-[1.8px] border-[var(--p-slate)] border-t-transparent`} />;
+/** The small loading mark in Plate ink (glow bars). */
+export function PlateSpinner({ className = "" }: { className?: string }) {
+  return <GlowBars size="sm" decorative className={`text-[var(--p-slate)] ${className}`} />;
 }
 
 function SignedOut({ onSignIn }: { onSignIn: () => void }) {
@@ -201,10 +201,8 @@ export function Empty({ title, body }: { title: string; body: string }) {
 /** Loading rows: flat raised tiles in the shape of the rows to come, no shimmer. */
 export function LoadingRows({ count = 2 }: { count?: number }) {
   return (
-    <div className="flex flex-col gap-[2px]" aria-busy>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="h-[80px] bg-[var(--p-raised)]" />
-      ))}
+    <div className="flex items-center justify-center" style={{ minHeight: count * 82 }} aria-busy>
+      <GlowBars />
     </div>
   );
 }

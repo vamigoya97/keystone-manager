@@ -1,5 +1,6 @@
 "use client";
 
+import GlowBars from "@/components/GlowBars";
 import { useMemo, useRef, useState } from "react";
 import { GALLERY_LIMITS, GALLERY_TYPES, KIND_LABEL, QR_LIMITS, canBeWide, cleanQrUrl, formatDuration, uploadKind } from "@/lib/gallery";
 import { galleryKind, type GalleryItem, type Keystone, type ThemeMedia } from "@/lib/keystones";
@@ -322,8 +323,7 @@ export default function GalleryTab({
           />
           {uploading ? (
             <>
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-ring border-t-transparent" />
-              <p className="mt-3 text-sm text-muted-foreground">Uploading to IPFS… {uploading} left</p>
+              <GlowBars size="md" label={`Uploading to IPFS… ${uploading} left`} className="text-muted-foreground" />
             </>
           ) : (
             <>

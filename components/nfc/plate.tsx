@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
+import GlowBars from "@/components/GlowBars";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { galleryKind, type GalleryItem, type PublicKeystone, type ThemeMedia } from "@/lib/keystones";
 import { formatDuration } from "@/lib/gallery";
@@ -642,8 +643,6 @@ function QrCard({ item, logo, large = false, className = "" }: { item: GalleryIt
   );
 }
 
-const SKELETON = [5 / 4, 3 / 4, 1, 4 / 5, 4 / 3, 1, 3 / 4, 5 / 4];
-
 /**
  * The vault: the operator's banner, then every item edge to edge in two
  * columns, then the keystone's description and attributes on the operator's
@@ -661,7 +660,7 @@ export function PlateVault({
 }: {
   keystone: PlateKeystone;
   items: GalleryItem[];
-  /** Access is still being confirmed: grey placeholders instead of items. */
+  /** Access is still being confirmed or the first images are loading: only the loading mark shows. */
   loading?: boolean;
   onOpen: (i: number) => void;
   /** Show "My Keystones" (back to the member home): the member holds other keystones too. */
@@ -679,54 +678,63 @@ export function PlateVault({
       <Backdrop keystone={keystone} className="flex flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
         <h1 className="sr-only">{keystone.name}</h1>
-        <motion.div
-          initial={fadeGallery ? { opacity: 0 } : false}
-          animate={{ opacity: 1 }}
-          transition={fadeGallery ? { duration: 0.2, ease: "easeOut" } : { duration: 0 }}
-        >
-          {banner?.src && (
-            <div className="mb-[2px] aspect-[3/1] overflow-hidden">
-              <MediaView media={banner} className="h-full w-full object-cover" />
-            </div>
-          )}
-          {loading ? (
-            <div className="columns-2 gap-[2px]" aria-busy>
-              {SKELETON.map((r, i) => (
-                <div key={i} className="mb-[2px] bg-[var(--p-raised)]" style={{ aspectRatio: r }} />
-              ))}
-            </div>
-          ) : items.length === 0 ? (
-            <p className="px-5 pt-10 text-[15px] text-[var(--p-slate)]">Nothing in the vault yet.</p>
-          ) : (
-            <div className="flex flex-col gap-[2px]">
-              {vaultRows(items).map((row) =>
-                row.wide ? (
-                  <VaultItem key={keyOf(items[row.index])} item={items[row.index]} logo={logo} onOpen={() => onOpen(row.index)} />
-                ) : (
-                  // Side by side at one shared height; a lone item keeps half the width.
-                  <div key={keyOf(items[row.indices[0]])} className={`flex gap-[2px] ${row.indices.length === 1 ? "w-1/2" : ""}`}>
-                    {row.indices.map((i) => (
-                      <VaultItem key={keyOf(items[i])} item={items[i]} logo={logo} onOpen={() => onOpen(i)} style={rowFlex(items[i])} />
-                    ))}
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-        </motion.div>
-        <div className="flex-1 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))] pt-10">
-          <Details keystone={keystone} heading="About this keystone" />
-          {myKeystones && (
-            <div className="px-5 pt-10">
-              <Link
-                href={`/o/${encodeURIComponent(keystone.operatorId)}`}
-                className="flex h-12 w-full items-center justify-center rounded-full border border-current text-[15px] font-medium text-[var(--p-ink)] active:opacity-80 focus-visible:outline-offset-2"
-              >
-                My Keystones
-              </Link>
-            </div>
-          )}
-        </div>
+        {loading ? (
+          // Description and gallery arrive together: until access is confirmed and the
+          // first images are in, only the loading mark shows.
+          <div className="flex flex-1 items-center justify-center py-24" aria-busy>
+            <GlowBars size="lg" />
+          </div>
+        ) : (
+          <motion.div
+            className="flex flex-1 flex-col"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+          <motion.div
+            initial={fadeGallery ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={fadeGallery ? { duration: 0.2, ease: "easeOut" } : { duration: 0 }}
+          >
+            {banner?.src && (
+              <div className="mb-[2px] aspect-[3/1] overflow-hidden">
+                <MediaView media={banner} className="h-full w-full object-cover" />
+              </div>
+            )}
+            {items.length === 0 ? (
+              <p className="px-5 pt-10 text-[15px] text-[var(--p-slate)]">Nothing in the vault yet.</p>
+            ) : (
+              <div className="flex flex-col gap-[2px]">
+                {vaultRows(items).map((row) =>
+                  row.wide ? (
+                    <VaultItem key={keyOf(items[row.index])} item={items[row.index]} logo={logo} onOpen={() => onOpen(row.index)} />
+                  ) : (
+                    // Side by side at one shared height; a lone item keeps half the width.
+                    <div key={keyOf(items[row.indices[0]])} className={`flex gap-[2px] ${row.indices.length === 1 ? "w-1/2" : ""}`}>
+                      {row.indices.map((i) => (
+                        <VaultItem key={keyOf(items[i])} item={items[i]} logo={logo} onOpen={() => onOpen(i)} style={rowFlex(items[i])} />
+                      ))}
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+          </motion.div>
+          <div className="flex-1 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))] pt-10">
+            <Details keystone={keystone} heading="About this keystone" />
+            {myKeystones && (
+              <div className="px-5 pt-10">
+                <Link
+                  href={`/o/${encodeURIComponent(keystone.operatorId)}`}
+                  className="flex h-12 w-full items-center justify-center rounded-full border border-current text-[15px] font-medium text-[var(--p-ink)] active:opacity-80 focus-visible:outline-offset-2"
+                >
+                  My Keystones
+                </Link>
+              </div>
+            )}
+          </div>
+          </motion.div>
+        )}
       </div>
       </Backdrop>
     </div>
@@ -921,22 +929,24 @@ function Wave({ className = "" }: { className?: string }) {
 // ── Member home ──────────────────────────────────────────────────
 
 /** Soft lift under each keystone on the member home. */
-const TILE_SHADOW = "shadow-[0_1px_2px_rgba(0,0,0,0.08),0_6px_16px_-4px_rgba(0,0,0,0.14)]";
+const TILE_SHADOW = "shadow-[0_2px_6px_rgba(0,0,0,0.22),0_20px_44px_-10px_rgba(0,0,0,0.6)]";
 
 /**
  * One keystone on the member home, at its artwork's own shape. Until the image
  * loads it holds a 4:5 frame (the usual keystone shape), so there's never an
  * empty, zero-height tile showing only its shadow.
  */
-function HomeTile({ keystone: k }: { keystone: MemberKeystone }) {
+function HomeTile({ keystone: k, index = 0 }: { keystone: MemberKeystone; index?: number }) {
   const [ratio, setRatio] = useState<number | null>(null);
   return (
     <Link
       href={`/x/${k.slug}/gallery`}
       title={k.name}
       aria-label={k.name}
-      className={`block overflow-hidden focus-visible:outline-offset-2 ${TILE_SHADOW}`}
+      className={`tap-bump block overflow-hidden rounded-[10px] focus-visible:outline-offset-2 ${TILE_SHADOW}`}
       style={{
+        // Bumps take turns down the column.
+        animationDelay: `${(index % 6) * 0.25}s`,
         aspectRatio: k.tokenImage ? (ratio ?? 4 / 5) : 1,
         background: `linear-gradient(135deg, ${k.palette[0]}, ${k.palette[1]})`,
       }}
@@ -998,10 +1008,8 @@ export function PlateHome({
         ) : error ? (
           <p className="px-5 pt-16 text-[15px] leading-[1.6] text-[var(--p-alert)]">{error}</p>
         ) : state === "loading" ? (
-          <div className="mx-auto flex w-full max-w-[300px] flex-col gap-6 px-4 pb-10" aria-busy>
-            {[0, 1].map((i) => (
-              <div key={i} className="aspect-[4/5] bg-[var(--p-raised)]" />
-            ))}
+          <div className="flex flex-1 items-center justify-center pb-16" aria-busy>
+            <GlowBars size="lg" />
           </div>
         ) : keystones.length === 0 ? (
           <p className="px-5 pt-16 text-[15px] leading-[1.6] text-[var(--p-slate)]">
@@ -1009,7 +1017,7 @@ export function PlateHome({
           </p>
         ) : (
           // One column, centred, each artwork at its own proportions.
-          <div className="mx-auto flex w-full max-w-[300px] flex-col gap-6 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
+          <div className="mx-auto flex w-full max-w-[240px] flex-col gap-8 px-4 pb-[max(40px,calc(env(safe-area-inset-bottom)+24px))]">
             {keystones.map((k, index) => (
               <motion.div
                 key={k.slug}
@@ -1017,15 +1025,15 @@ export function PlateHome({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28, delay: Math.min(index, 5) * 0.035, ease: "easeOut" }}
               >
-                <HomeTile keystone={k} />
+                <HomeTile keystone={k} index={index} />
               </motion.div>
             ))}
           </div>
         )}
-        {/* Back sits bottom left, within thumb reach; sticky so it stays put while the column scrolls. */}
+        {/* Back sits bottom right, within thumb reach; sticky so it stays put while the column scrolls. */}
         {backHref && (
-          <div className="pointer-events-none sticky bottom-0 mt-auto px-4 pb-[max(20px,calc(env(safe-area-inset-bottom)+12px))]">
-            <Link href={backHref} aria-label="Back to Operators" className="pointer-events-auto flex h-11 w-11 items-center justify-center border border-current bg-black/30 text-inherit backdrop-blur-sm hover:no-underline">
+          <div className="pointer-events-none sticky bottom-0 mt-auto flex justify-end px-4 pb-[max(20px,calc(env(safe-area-inset-bottom)+12px))]">
+            <Link href={backHref} aria-label="Back to Operators" className="pointer-events-auto flex h-11 w-11 items-center justify-center bg-black/30 text-inherit shadow-[0_2px_6px_rgba(0,0,0,0.3),0_12px_28px_-8px_rgba(0,0,0,0.6)] backdrop-blur-sm hover:no-underline">
               <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
             </Link>
           </div>

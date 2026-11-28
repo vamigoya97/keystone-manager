@@ -3,6 +3,8 @@ import { getOperator, updateOperator } from "@/lib/store";
 import { sanitizeMedia } from "@/lib/theme";
 import type { OperatorAppearance } from "@/lib/keystones";
 
+const APPEARANCE_KEYS = ["icon", "background", "menuBackground"] as const;
+
 /** Update only public presentation settings. Operator access uses the console allowlist. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,7 +16,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const appearance = (body as { appearance?: unknown } | null)?.appearance;
     if (!appearance || typeof appearance !== "object" || Array.isArray(appearance)) return Response.json({ error: "Appearance is required" }, { status: 400 });
     const changes: Partial<Record<keyof OperatorAppearance, ReturnType<typeof sanitizeMedia> | null>> = {};
-    for (const key of ["icon", "background"] as const) {
+    for (const key of APPEARANCE_KEYS) {
       if (!(key in appearance)) continue;
       const value = (appearance as Record<string, unknown>)[key];
       if (value === null) { changes[key] = null; continue; }
@@ -24,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     const op = await updateOperator(id, (o) => {
       o.appearance ??= {};
-      for (const key of ["icon", "background"] as const) {
+      for (const key of APPEARANCE_KEYS) {
         if (!(key in changes)) continue;
         if (changes[key] === null) delete o.appearance[key];
         else o.appearance[key] = changes[key]!;

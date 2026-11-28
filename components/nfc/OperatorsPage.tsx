@@ -1,5 +1,6 @@
 "use client";
 
+import GlowBars from "@/components/GlowBars";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePrivy } from "@privy-io/react-auth";
@@ -27,7 +28,9 @@ export function OperatorsView({ keystones, background, selected, state, error, o
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const current = groups.find((g) => g.operator.id === pickedId) ?? groups[0];
   const ready = state === "ready" && !error && groups.length > 0;
-  const media = (ready ? current?.operator.appearance?.background : undefined) ?? background;
+  const look = ready ? current?.operator.appearance : undefined;
+  // Operators has its own background when the operator set one; otherwise their My Keystones one.
+  const media = look?.menuBackground ?? look?.background ?? background;
 
   function pick(i: number) {
     const next = (i + groups.length) % groups.length;
@@ -42,13 +45,13 @@ export function OperatorsView({ keystones, background, selected, state, error, o
       <h1 className="sr-only">Operators</h1>
       {!ready ? (
         <div className="mx-auto w-full max-w-3xl px-5 pt-[max(24px,calc(env(safe-area-inset-top)+12px))]">
-          {state === "signed-out" ? <button className="mt-8 border border-current px-5 py-3" onClick={onSignIn}>Sign in</button> : error ? <p role="alert" className="mt-8">{error}</p> : state === "loading" ? <p role="status" className="mt-8">Loading operators…</p> : <p className="mt-8 text-[15px]">Secure a keystone to see its operator here.</p>}
+          {state === "signed-out" ? <button className="mt-8 border border-current px-5 py-3" onClick={onSignIn}>Sign in</button> : error ? <p role="alert" className="mt-8">{error}</p> : state === "loading" ? <div className="flex min-h-[70dvh] items-center justify-center"><GlowBars size="lg" /></div> : <p className="mt-8 text-[15px]">Secure a keystone to see its operator here.</p>}
         </div>
       ) : (
         <>
           <div id="operator-focus" role={groups.length > 1 ? "tabpanel" : undefined} className="flex flex-1 flex-col items-center justify-center gap-6 px-5 pt-[max(40px,calc(env(safe-area-inset-top)+24px))]">
-            <Link href={`/o/${encodeURIComponent(current.operator.id)}`} aria-label={`${current.operator.name}, ${current.active.length} keystone${current.active.length === 1 ? "" : "s"}`} className="group block rounded-full text-inherit hover:no-underline focus-visible:outline-offset-4">
-              <span className="flex aspect-square w-[min(232px,60vw)] items-center justify-center overflow-hidden rounded-full border border-current bg-white/5 text-[56px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] transition-transform group-hover:scale-[1.02]">
+            <Link href={`/o/${encodeURIComponent(current.operator.id)}`} aria-label={`${current.operator.name}, ${current.active.length} keystone${current.active.length === 1 ? "" : "s"}`} className="tap-bump group block rounded-full text-inherit hover:no-underline focus-visible:outline-offset-4">
+              <span className="flex aspect-square w-[min(232px,60vw)] items-center justify-center overflow-hidden rounded-full bg-white/5 text-[56px] shadow-[0_4px_12px_rgba(0,0,0,0.35),0_28px_70px_-10px_rgba(0,0,0,0.75)] transition-transform group-hover:scale-[1.02]">
                 {current.operator.appearance?.icon ? <MediaView media={current.operator.appearance.icon} className="h-full w-full object-cover" /> : current.operator.name.charAt(0).toUpperCase()}
               </span>
             </Link>
@@ -71,7 +74,7 @@ export function OperatorsView({ keystones, background, selected, state, error, o
                     onKeyDown={(e) => { if (e.key === "ArrowRight") pick(i + 1); else if (e.key === "ArrowLeft") pick(i - 1); }}
                     className={`grid size-16 place-items-center rounded-full border-2 transition-opacity ${selected ? "border-current opacity-100" : "border-transparent opacity-60 hover:opacity-90"}`}
                   >
-                    <span className="flex size-[54px] items-center justify-center overflow-hidden rounded-full bg-white/10 text-[20px]">
+                    <span className="flex size-[54px] items-center justify-center overflow-hidden rounded-full bg-white/10 text-[20px] shadow-[0_2px_6px_rgba(0,0,0,0.35),0_10px_24px_-6px_rgba(0,0,0,0.6)]">
                       {operator.appearance?.icon ? <MediaView media={operator.appearance.icon} className="h-full w-full object-cover" /> : operator.name.charAt(0).toUpperCase()}
                     </span>
                   </button>
