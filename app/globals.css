@@ -430,6 +430,18 @@ html, body {
 #privy-modal-content [class*="HeaderTitle-"] { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 #privy-modal-content [class*="HelpTextContainer-"],
 #privy-modal-content [class*="ModalFooter-"] { color: var(--privy-color-foreground-3); }
+/* Text links inside help text ("Resend code"): plain underlined text, no frosted fill. */
+#privy-modal-content [class*="HelpTextContainer-"] button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  color: var(--keystone-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#privy-modal-content [class*="HelpTextContainer-"] button:hover { text-decoration-thickness: 2px; }
 
 /* Shorter sheet: tighter header, gaps and footer than Privy's defaults. */
 #privy-modal-content [class*="ScreenRootInner-"] {
